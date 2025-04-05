@@ -10,9 +10,9 @@ public class Categorie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idCategorie")
+    @Column(name = "id_categorie")
     int idCategorie;
 
-    @Column(name = "libCategorie")
+    @Column(name = "lib_categorie")
     String libCategorie;
 }
