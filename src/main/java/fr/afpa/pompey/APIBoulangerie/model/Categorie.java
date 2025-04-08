@@ -1,6 +1,8 @@
 package fr.afpa.pompey.APIBoulangerie.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -14,5 +16,7 @@ public class Categorie {
     int idCategorie;
 
     @Column(name = "lib_categorie")
+    @NotBlank(message = "Le libellé de la catégorie doit être renseigné.")
+    @Size(max = 30, message = "La catégorie ne doit pas dépasser 30 caractères.")
     String libCategorie;
 }
