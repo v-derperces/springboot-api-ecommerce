@@ -37,8 +37,8 @@ Role        Contains id and name
 # Key Endpoints
 
 Endpoint                   Method  Description
-/auth/register             POST    Create a new user account
-/auth/login                POST    Log in
+/api/auth/register             POST    Create a new user account
+/api/auth/login                POST    Log in
 
 /products                  GET     List all products
 /product                   POST    Create a product
@@ -69,8 +69,9 @@ mvn spring-boot:run
 
 # Possible Future Improvements
 
-* Implement full user authentication (JWT)
 * Complete role and permission management
+* Add full audit/logging of user actions
+* Implement pagination and sorting for endpoints
 
 # Contact
 

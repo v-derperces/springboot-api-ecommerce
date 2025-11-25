@@ -1,16 +1,13 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
-import fr.afpa.pompey.APIEcommerce.controller.UserController;
 import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
 import fr.afpa.pompey.APIEcommerce.model.User;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.logging.Logger;
 
 @Service
 public class UserService {
@@ -23,6 +20,10 @@ public class UserService {
 
     public Iterable<User> getUsers() {
         return userRepository.findAll();
+    }
+
+    public Iterable<User> getUsersByRole(String role) {
+        return userRepository.findUsersByRole(role);
     }
 
     public Optional<User> getUser(int id) {
@@ -50,6 +51,10 @@ public class UserService {
             }
             userRepository.deleteById(id);
         }
+    }
+
+    public Optional<User> getUserByEmail(String username) {
+        return userRepository.findByEmail(username);
     }
 
 }
