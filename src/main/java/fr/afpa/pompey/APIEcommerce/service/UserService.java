@@ -1,5 +1,6 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
+import fr.afpa.pompey.APIEcommerce.dto.user.ChangePasswordRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserUpdateRequest;
@@ -75,5 +76,18 @@ public class UserService {
         User user = userRepository.findByEmail(username).orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
 
         return userMapper.toResponse(user);
+    }
+
+    public String changePassword(String username, ChangePasswordRequest request) throws CustomHttpException {
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new CustomHttpException("Current password is incorrect", HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase());
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return "Password changed successfully";
     }
 }

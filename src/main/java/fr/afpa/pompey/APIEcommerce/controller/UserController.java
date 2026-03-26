@@ -1,5 +1,6 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
+import fr.afpa.pompey.APIEcommerce.dto.user.ChangePasswordRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserUpdateRequest;
 import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
@@ -29,5 +30,10 @@ public class UserController {
     public ResponseEntity<UserResponse> updateMe(@Valid @RequestBody UserUpdateRequest userUpdateRequest, Authentication authentication) throws CustomHttpException {
 
         return ResponseEntity.ok(userService.updateUser(authentication.getName(), userUpdateRequest));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, Authentication authentication) throws CustomHttpException {
+        return ResponseEntity.ok(userService.changePassword(authentication.getName(), changePasswordRequest));
     }
 }

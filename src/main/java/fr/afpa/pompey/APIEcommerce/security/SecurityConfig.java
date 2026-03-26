@@ -62,11 +62,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/me").hasAuthority("USER")
-                    .requestMatchers("/user").hasAnyAuthority("MANAGER", "ADMIN")
-                    .requestMatchers("/user/**").hasAnyAuthority("MANAGER", "ADMIN")
+                    .requestMatchers("/me").authenticated()
+                    .requestMatchers("/me/**").authenticated()
                     .requestMatchers("/users").hasAnyAuthority("MANAGER", "ADMIN")
-                    .anyRequest().permitAll())
+                    .requestMatchers("/users/**").hasAnyAuthority("MANAGER", "ADMIN")
+                    .anyRequest().authenticated())
             .userDetailsService(userDetailService)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .oauth2ResourceServer(oauth2 ->

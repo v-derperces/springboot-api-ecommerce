@@ -4,7 +4,6 @@ import fr.afpa.pompey.APIEcommerce.dto.LoginRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 import fr.afpa.pompey.APIEcommerce.service.JWTService;
 import fr.afpa.pompey.APIEcommerce.service.UserService;
 import jakarta.validation.Valid;
@@ -14,7 +13,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -26,9 +24,8 @@ public class AuthentificationController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
-    public AuthentificationController(RoleRepository roleRepository,
-        UserService userService, AuthenticationManager authenticationManager,
-        JWTService jwtService, PasswordEncoder passwordEncoder) {
+    public AuthentificationController(UserService userService, AuthenticationManager authenticationManager,
+        JWTService jwtService) {
             this.userService = userService;
             this.authenticationManager = authenticationManager;
             this.jwtService = jwtService;
