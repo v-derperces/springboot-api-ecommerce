@@ -26,13 +26,13 @@ public class OrderlineController {
     }
 
     @GetMapping("/orderline/{id}")
-    public Orderline getOrderline(@PathVariable int id) {
+    public Orderline getOrderline(@PathVariable Long id) {
         Optional<Orderline> l = orderlineService.getLine(id);
         return l.orElse(null);
     }
 
     @PutMapping("/orderline/{id}")
-    public Orderline updateOrderline(@Valid @RequestBody Orderline orderline, @PathVariable int id) {
+    public Orderline updateOrderline(@Valid @RequestBody Orderline orderline, @PathVariable Long id) {
         Optional<Orderline> existingOpt = orderlineService.getLine(id);
         if (existingOpt.isPresent()) {
             Orderline existing = existingOpt.get();
@@ -46,7 +46,7 @@ public class OrderlineController {
     }
 
     @DeleteMapping("/orderline/{id}")
-    public void deleteOrderline(@PathVariable int id) {
+    public void deleteOrderline(@PathVariable Long id) {
         orderlineService.deleteLine(id);
     }
 }

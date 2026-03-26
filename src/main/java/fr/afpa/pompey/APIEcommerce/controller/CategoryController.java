@@ -28,7 +28,7 @@ public class CategoryController {
     }
 
     @GetMapping("/category/{id}")
-    public Category getCategory(@PathVariable("id") int id) {
+    public Category getCategory(@PathVariable("id") Long id) {
         Optional<Category> category = categoryService.getCategory(id);
         if(category.isPresent()){
             return category.get();
@@ -37,7 +37,7 @@ public class CategoryController {
     }
 
     @PutMapping("/category/{id}")
-    public Category updateCategory(@Valid @RequestBody Category category, @PathVariable("id") int id) throws CustomHttpException {
+    public Category updateCategory(@Valid @RequestBody Category category, @PathVariable("id") Long id) throws CustomHttpException {
         Optional<Category> p = categoryService.getCategory(id); // Fetches the category from the database.
         if(p.isPresent()){ // Checks if the category already exists.
             Category cat = p.get();
@@ -49,7 +49,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/category/{id}")
-    public void deleteCategory(@PathVariable("id") int id) throws CustomHttpException {
+    public void deleteCategory(@PathVariable("id") Long id) throws CustomHttpException {
         categoryService.deleteCategory(id);
     }
 }

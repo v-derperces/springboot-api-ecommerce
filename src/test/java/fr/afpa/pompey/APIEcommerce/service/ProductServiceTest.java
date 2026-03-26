@@ -76,9 +76,9 @@ class ProductServiceTest {
     @Test
     void deleteProduct_success() throws CustomHttpException {
 
-        productService.deleteProduct(product.getProductId().intValue());
+        productService.deleteProduct(product.getProductId());
 
-        Optional<Product> deleted = productRepository.findById(product.getProductId().intValue());
+        Optional<Product> deleted = productRepository.findById(product.getProductId());
         assertFalse(deleted.isPresent());
     }
 
@@ -102,12 +102,12 @@ class ProductServiceTest {
         orderlineRepository.save(orderLine);
 
         CustomHttpException ex = assertThrows(CustomHttpException.class,
-                () -> productService.deleteProduct(product.getProductId().intValue()));
+                () -> productService.deleteProduct(product.getProductId()));
 
         assertEquals(HttpStatus.CONFLICT.value(), ex.getStatusCode());
         assertTrue(ex.getMessage().contains("linked to an order"));
 
-        Optional<Product> stillExists = productRepository.findById(product.getProductId().intValue());
+        Optional<Product> stillExists = productRepository.findById(product.getProductId());
         assertTrue(stillExists.isPresent());
     }
 }

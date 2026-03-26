@@ -66,7 +66,7 @@ public class SecurityConfig {
                     .requestMatchers("/user").hasAnyAuthority("MANAGER", "ADMIN")
                     .requestMatchers("/user/**").hasAnyAuthority("MANAGER", "ADMIN")
                     .requestMatchers("/users").hasAnyAuthority("MANAGER", "ADMIN")
-                    .anyRequest().authenticated())
+                    .anyRequest().permitAll())
             .userDetailsService(userDetailService)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .oauth2ResourceServer(oauth2 ->

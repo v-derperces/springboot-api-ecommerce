@@ -1,12 +1,16 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleRequest;
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleResponse;
 import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Role;
 import fr.afpa.pompey.APIEcommerce.service.RoleService;
 import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 public class RoleController {
@@ -17,35 +21,29 @@ public class RoleController {
         this.roleService = roleService;
     }
 
-    @PostMapping("/role")
-    public Role createRole(@Valid @RequestBody Role role) throws CustomHttpException {
-        return roleService.saveRole(role);
+    @PostMapping("/roles")
+    public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody RoleRequest request) throws CustomHttpException {
+        return ResponseEntity.status(HttpStatus.CREATED.value()).body(roleService.createRole(request));
     }
 
     @GetMapping("/roles")
-    public Iterable<Role> getRoles() {
-        return roleService.getRoles();
+    public ResponseEntity<List<RoleResponse>> getRoles() {
+        return ResponseEntity.ok(roleService.getRoles());
     }
 
-    @GetMapping("/role/{id}")
-    public Role getRole(@PathVariable int id) {
-        Optional<Role> r = roleService.getRole(id);
-        return r.orElse(null);
+    @GetMapping("/roles/{id}")
+    public ResponseEntity<RoleResponse> getRole(@PathVariable Long id) throws CustomHttpException {
+        return ResponseEntity.ok(roleService.getRole(id));
     }
 
-    @PutMapping("/role/{id}")
-    public Role updateRole(@Valid @RequestBody Role role, @PathVariable int id) throws CustomHttpException {
-        Optional<Role> existingOpt = roleService.getRole(id);
-        if (existingOpt.isPresent()) {
-            Role existing = existingOpt.get();
-            existing.setName(role.getName());
-            return roleService.saveRole(existing);
-        }
-        return null;
+    @PutMapping("/roles/{id}")
+    public ResponseEntity<RoleResponse> updateRole(@Valid @RequestBody RoleRequest request, @PathVariable Long id) throws CustomHttpException {
+        return ResponseEntity.ok(roleService.updateRole(id, request));
     }
 
-    @DeleteMapping("/role/{id}")
-    public void deleteRole(@PathVariable int id) throws CustomHttpException {
+    @DeleteMapping("/roles/{id}")
+    public ResponseEntity<Void> deleteRole(@PathVariable Long id) throws CustomHttpException {
         roleService.deleteRole(id);
+        return ResponseEntity.noContent().build();
     }
 }

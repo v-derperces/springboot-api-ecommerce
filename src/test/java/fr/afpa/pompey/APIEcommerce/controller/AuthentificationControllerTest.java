@@ -106,7 +106,7 @@ class AuthentificationControllerTest {
 
         String loginJson = """
             {
-                "email": "hp@hoghwarts.com",
+                "username": "hp@hoghwarts.com",
                 "password": "9-3/4"
             }
             """;
