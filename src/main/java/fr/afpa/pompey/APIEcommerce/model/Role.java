@@ -18,4 +18,7 @@ public class Role {
     @NotBlank(message = "The role name is required.")
     private String name;
 
+    public void setName(String name) {
+        this.name = name.trim().toUpperCase();
+    }
 }
