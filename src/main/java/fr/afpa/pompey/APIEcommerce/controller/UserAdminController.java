@@ -3,7 +3,6 @@ package fr.afpa.pompey.APIEcommerce.controller;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminUpdateRequest;
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
 import fr.afpa.pompey.APIEcommerce.service.UserAdminService;
 import jakarta.validation.Valid;
 
@@ -23,7 +22,7 @@ public class UserAdminController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<UserAdminResponse> createUser(@Valid @RequestBody UserAdminCreateRequest request) throws CustomHttpException {
+    public ResponseEntity<UserAdminResponse> createUser(@Valid @RequestBody UserAdminCreateRequest request) {
             return ResponseEntity.status(HttpStatus.CREATED.value()).body(userAdminService.createUser(request));
     }
 
@@ -33,22 +32,20 @@ public class UserAdminController {
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserAdminResponse> getUser(@PathVariable Long id) throws CustomHttpException {
+    public ResponseEntity<UserAdminResponse> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(userAdminService.getUser(id));
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<String> updateUser(
+    public ResponseEntity<UserAdminResponse> updateUser(
             @Valid @RequestBody UserAdminUpdateRequest request,
-            @PathVariable("id") Long id) throws CustomHttpException {
-
-        userAdminService.updateUser(id, request);
-        return ResponseEntity.ok("User updated successfully");
+            @PathVariable Long id) {
+        return ResponseEntity.ok(userAdminService.updateUser(id, request));
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id) throws CustomHttpException {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userAdminService.deleteUser(id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.noContent().build();
     }
 }

@@ -44,6 +44,11 @@ Endpoint                    Method      Description
 /me                         PUT     Change profil information
 /me/password                PUT     Change password
 
+/users                      GET     List all users
+/users                      POST    Create a new user with roles
+/users/{id}                 PUT     Update user information
+/users/{id}                 DELETE  Delete user (only allower if there are no orders associated)
+
 /products                   GET     List all products
 /product                    POST    Create a product
 /product/{id}               PUT     Update a product
@@ -56,11 +61,6 @@ Endpoint                    Method      Description
 
 /order                      POST    Create an order
 /order/{id}                 GET     Get an order by ID
-
-/users                      GET     List all users
-/user                       POST    Register a new user
-/user/{id}                  PUT     Update a user
-/user/{id}                  DELETE  Delete a user
 
 # Prerequisites
 
