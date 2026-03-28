@@ -57,4 +57,20 @@ public class User {
     @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 
+    public void setFirstName(String firstName) {
+        this.firstName = firstName.trim();
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName.trim();
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone != null ? phone.trim() : null;
+    }
+
+    public void setAddress(String address) {
+        this.address = address != null ? address.trim() : null;
+    }
+
 }

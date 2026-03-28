@@ -4,14 +4,20 @@ import fr.afpa.pompey.APIEcommerce.dto.user.ChangePasswordRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserUpdateRequest;
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
+import fr.afpa.pompey.APIEcommerce.exceptions.AuthException;
+import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
+import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.mapper.UserMapper;
 import fr.afpa.pompey.APIEcommerce.model.Role;
 import fr.afpa.pompey.APIEcommerce.model.User;
-import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,43 +26,55 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final RoleRepository roleRepository;
+    private final RoleService roleService;
 
     private final UserMapper userMapper;
 
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    private final AuthenticationManager authenticationManager;
+
+    private final JWTService jwtService;
+
+    public UserService(UserRepository userRepository, RoleService roleService, UserMapper userMapper, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JWTService jwtService) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.roleService = roleService;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
-    public UserResponse getUser(Long id) throws CustomHttpException {
-        User user = userRepository.findById(id).orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
-        return userMapper.toResponse(user);
-    }
-
-    public UserResponse createUser(UserCreateRequest request) throws CustomHttpException {
+    public UserResponse register(UserCreateRequest request) {
         try {
             User user = userMapper.toEntity(request);
             user.setPassword(passwordEncoder.encode(request.getPassword()));
-            Role role = roleRepository.findByName("USER").orElseThrow(() -> new CustomHttpException("Default role not found", HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase()));
+            Role role = roleService.getRoleByName("USER");
             user.getRoles().add(role);
 
             User savedUser = userRepository.save(user);
             return userMapper.toResponse(savedUser);
         } catch (DataIntegrityViolationException e) {
-            throw new CustomHttpException("Unable to create account. Please check the provided information.",
-            HttpStatus.CONFLICT.value(),
-            HttpStatus.CONFLICT.getReasonPhrase());
+            throw new ConflictException("Unable to create account. Please check the provided information.");
         }
     }
 
-    public UserResponse updateUser(String username, UserUpdateRequest request) throws CustomHttpException {
+    public String login(String username, String password) {
+        try {
+            Authentication authentication =
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password)
+            );
+            String token = jwtService.generateToken(authentication);
+            return token;
+        } catch (AuthenticationException e) {
+            throw new AuthException("Invalid credentials", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    public UserResponse updateUser(String username, UserUpdateRequest request) {
         User existingUser = userRepository.findByEmail(username)
-        .orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
+        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
 
         existingUser.setFirstName(request.getFirstName());
         existingUser.setLastName(request.getLastName());
@@ -66,28 +84,32 @@ public class UserService {
             User updatedUser = userRepository.save(existingUser);
             return userMapper.toResponse(updatedUser);
         } catch (DataIntegrityViolationException e) {
-            throw new CustomHttpException("Unable to update account. Please check the provided information.",
-            HttpStatus.CONFLICT.value(),
-            HttpStatus.CONFLICT.getReasonPhrase());
+            throw new ConflictException("Unable to update account. Provided information incorrect");
         }
     }
 
-    public UserResponse getUserByEmail(String username) throws CustomHttpException {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
-
-        return userMapper.toResponse(user);
-    }
-
-    public String changePassword(String username, ChangePasswordRequest request) throws CustomHttpException {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new CustomHttpException("User not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(username)
+        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new CustomHttpException("Current password is incorrect", HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase());
+            throw new AuthException("Current password is incorrect", HttpStatus.BAD_REQUEST);
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
 
-        return "Password changed successfully";
+    public UserResponse getUser(Long id) {
+        User user = userRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+        return userMapper.toResponse(user);
+    }
+
+    public UserResponse getUserByEmail(String username) {
+        User user = userRepository.findByEmail(username)
+        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
+
+        return userMapper.toResponse(user);
     }
 }

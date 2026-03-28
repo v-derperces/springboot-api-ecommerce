@@ -65,4 +65,11 @@ public class RoleService {
         }
     }
 
+    public Role getRoleByName(String name) {
+        Role role = roleRepository.findByName(name).orElseThrow(
+                () -> new NotFoundException("Cannot get role: No role found with name: " + name));
+
+        return role;
+    }
+
 }
