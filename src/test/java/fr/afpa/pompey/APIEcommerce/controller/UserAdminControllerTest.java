@@ -32,7 +32,7 @@ import fr.afpa.pompey.APIEcommerce.service.UserAdminService;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class UserAdminControllerTest {
+class UserAdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,7 +44,7 @@ public class UserAdminControllerTest {
     private UserAdminService userAdminService;
 
     @Test
-    void createUser_unauthenticated_shouldReturn401() throws Exception {
+    void createUserUnauthenticatedShouldReturn401() throws Exception {
         UserAdminCreateRequest createRequest = new UserAdminCreateRequest();
         createRequest.setFirstName("Any");
         createRequest.setLastName("User");
@@ -60,7 +60,7 @@ public class UserAdminControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void createUser_asUser_shouldReturn403() throws Exception {
+    void createUserAsUserShouldReturn403() throws Exception {
         UserAdminCreateRequest createRequest = new UserAdminCreateRequest();
         createRequest.setFirstName("Any");
         createRequest.setLastName("User");
@@ -76,7 +76,7 @@ public class UserAdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void createUser_asAdmin_shouldReturn201() throws Exception {
+    void createUserAsAdminShouldReturn201() throws Exception {
         UserAdminCreateRequest createRequest = new UserAdminCreateRequest();
         createRequest.setFirstName("Admin");
         createRequest.setLastName("User");
@@ -100,21 +100,21 @@ public class UserAdminControllerTest {
     }
 
     @Test
-    void getUsers_unauthenticated_shouldReturn401() throws Exception {
+    void getUsersUnauthenticatedShouldReturn401() throws Exception {
         mockMvc.perform(get("/users"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(roles = "USER")
-    void getUsers_asUser_shouldReturn403() throws Exception {
+    void getUsersAsUserShouldReturn403() throws Exception {
         mockMvc.perform(get("/users"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void getUsers_asAdmin_shouldReturn200() throws Exception {
+    void getUsersAsAdminShouldReturn200() throws Exception {
         UserAdminResponse response = new UserAdminResponse();
         response.setId(1L);
         response.setFirstName("Admin");
@@ -131,7 +131,7 @@ public class UserAdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void getUser_asAdmin_shouldReturn200() throws Exception {
+    void getUserAsAdminShouldReturn200() throws Exception {
         UserAdminResponse response = new UserAdminResponse();
         response.setId(1L);
         response.setFirstName("Admin");
@@ -147,7 +147,7 @@ public class UserAdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void updateUser_asAdmin_shouldReturn200() throws Exception {
+    void updateUserAsAdminShouldReturn200() throws Exception {
         UserAdminUpdateRequest updateRequest = new UserAdminUpdateRequest();
         updateRequest.setFirstName("Admin");
         updateRequest.setLastName("User");
@@ -172,7 +172,7 @@ public class UserAdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void deleteUser_asAdmin_shouldReturn204() throws Exception {
+    void deleteUserAsAdminShouldReturn204() throws Exception {
         mockMvc.perform(delete("/users/1"))
                 .andExpect(status().isNoContent());
     }

@@ -1,9 +1,9 @@
 package fr.afpa.pompey.APIEcommerce.exceptions.handler;
 
+import java.time.LocalDateTime;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Setter
 @Getter
@@ -14,7 +14,8 @@ public class ErrorResponse {
     private String message;
     private String path;
 
-    public ErrorResponse() {}
+    public ErrorResponse() {
+    }
 
     public ErrorResponse(int status, String error, String message, String path) {
         this.timestamp = LocalDateTime.now();

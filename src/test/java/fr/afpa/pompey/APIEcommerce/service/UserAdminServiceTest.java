@@ -30,7 +30,7 @@ import fr.afpa.pompey.APIEcommerce.repository.OrderRepository;
 import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
 
-public class UserAdminServiceTest {
+class UserAdminServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -56,14 +56,14 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    void getUser_notFound_shouldThrowNotFoundException() {
+    void getUserNotFoundShouldThrowNotFoundException() {
         when(userRepository.findById(42L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userAdminService.getUser(42L));
     }
 
     @Test
-    void createUser_validInput_shouldReturnMappedResponse() {
+    void createUserValidInputShouldReturnMappedResponse() {
         UserAdminCreateRequest request = new UserAdminCreateRequest();
         request.setFirstName("New");
         request.setLastName("User");
@@ -97,7 +97,7 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    void createUser_duplicateEmail_shouldThrowConflictException() {
+    void createUserDuplicateEmailShouldThrowConflictException() {
         UserAdminCreateRequest request = new UserAdminCreateRequest();
         request.setFirstName("New");
         request.setLastName("User");
@@ -116,7 +116,7 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    void updateUser_notFound_shouldThrowNotFoundException() {
+    void updateUserNotFoundShouldThrowNotFoundException() {
         when(userRepository.findById(123L)).thenReturn(Optional.empty());
 
         UserAdminUpdateRequest request = new UserAdminUpdateRequest();
@@ -130,7 +130,7 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    void updateUser_valid_shouldReturnMappedResponse() {
+    void updateUserValidInputShouldReturnMappedResponse() {
         User existing = new User();
         existing.setUserId(2L);
 
@@ -163,14 +163,14 @@ public class UserAdminServiceTest {
     }
 
     @Test
-    void deleteUser_withOrders_shouldThrowConflictException() {
+    void deleteUserWithOrdersShouldThrowConflictException() {
         when(orderRepository.existsByUser_UserId(5L)).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> userAdminService.deleteUser(5L));
     }
 
     @Test
-    void deleteUser_withoutOrders_shouldDeleteUser() {
+    void deleteUserWithoutOrdersShouldDeleteUser() {
         when(orderRepository.existsByUser_UserId(10L)).thenReturn(false);
         doNothing().when(userRepository).deleteById(10L);
 

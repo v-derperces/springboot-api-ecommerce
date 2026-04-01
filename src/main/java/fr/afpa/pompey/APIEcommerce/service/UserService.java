@@ -1,5 +1,14 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import fr.afpa.pompey.APIEcommerce.dto.user.ChangePasswordRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
@@ -12,31 +21,36 @@ import fr.afpa.pompey.APIEcommerce.model.Role;
 import fr.afpa.pompey.APIEcommerce.model.User;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
 
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
+/**
+ * Service responsible for user authentication, registration and profile management.
+ */
 @Service
 public class UserService {
 
+    /** Repository used to access user data storage. */
     private final UserRepository userRepository;
 
+    /** Service for role-related operations. */
     private final RoleService roleService;
 
+    /** Mapper used to convert users between entities and DTOs. */
     private final UserMapper userMapper;
 
+    /** Password encoder used for hashing passwords. */
     private final PasswordEncoder passwordEncoder;
 
+    /** Authentication manager for login operations. */
     private final AuthenticationManager authenticationManager;
 
+    /** JWT service for token generation and validation. */
     private final JWTService jwtService;
 
-    public UserService(UserRepository userRepository, RoleService roleService, UserMapper userMapper, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JWTService jwtService) {
+    public UserService(final UserRepository userRepository,
+            final RoleService roleService,
+            final UserMapper userMapper,
+            final PasswordEncoder passwordEncoder,
+            final AuthenticationManager authenticationManager,
+            final JWTService jwtService) {
         this.userRepository = userRepository;
         this.roleService = roleService;
         this.userMapper = userMapper;
@@ -45,71 +59,106 @@ public class UserService {
         this.jwtService = jwtService;
     }
 
-    public UserResponse register(UserCreateRequest request) {
+    /**
+     * Register a new user.
+     *
+     * @param request sign-up request
+     * @return user response after registration
+     */
+    public UserResponse register(final UserCreateRequest request) {
         try {
-            User user = userMapper.toEntity(request);
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-            Role role = roleService.getRoleByName("USER");
+            final User user = this.userMapper.toEntity(request);
+            user.setPassword(this.passwordEncoder.encode(request.getPassword()));
+            final Role role = this.roleService.getRoleByName("USER");
             user.getRoles().add(role);
 
-            User savedUser = userRepository.save(user);
-            return userMapper.toResponse(savedUser);
+            final User savedUser = this.userRepository.save(user);
+            return this.userMapper.toResponse(savedUser);
         } catch (DataIntegrityViolationException e) {
             throw new ConflictException("Unable to create account. Please check the provided information.");
         }
     }
 
-    public String login(String username, String password) {
+    /**
+     * Authenticate and issue a JWT.
+     *
+     * @param username login username
+     * @param password login password
+     * @return JWT token string
+     */
+    public String login(final String username, final String password) {
         try {
-            Authentication authentication =
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-            );
-            String token = jwtService.generateToken(authentication);
-            return token;
+            final Authentication authentication = this.authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+            return this.jwtService.generateToken(authentication);
         } catch (AuthenticationException e) {
             throw new AuthException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
     }
 
-    public UserResponse updateUser(String username, UserUpdateRequest request) {
-        User existingUser = userRepository.findByEmail(username)
-        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
+    /**
+     * Update an existing user by email.
+     *
+     * @param username email address used as unique identifier
+     * @param request  update request payload
+     * @return user response after update
+     */
+    public UserResponse updateUser(final String username, final UserUpdateRequest request) {
+        final User existingUser = this.userRepository.findByEmail(username)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
 
         existingUser.setFirstName(request.getFirstName());
         existingUser.setLastName(request.getLastName());
         existingUser.setEmail(request.getEmail());
 
         try {
-            User updatedUser = userRepository.save(existingUser);
-            return userMapper.toResponse(updatedUser);
+            final User updatedUser = this.userRepository.save(existingUser);
+            return this.userMapper.toResponse(updatedUser);
         } catch (DataIntegrityViolationException e) {
             throw new ConflictException("Unable to update account. Provided information incorrect");
         }
     }
 
-    public void changePassword(String username, ChangePasswordRequest request) {
-        User user = userRepository.findByEmail(username)
-        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
+    /**
+     * Change password for the user.
+     *
+     * @param username email identification
+     * @param request  change password payload
+     */
+    public void changePassword(final String username, final ChangePasswordRequest request) {
+        final User user = this.userRepository.findByEmail(username)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        if (!this.passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new AuthException("Current password is incorrect", HttpStatus.BAD_REQUEST);
         }
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
+        user.setPassword(this.passwordEncoder.encode(request.getNewPassword()));
+        this.userRepository.save(user);
     }
 
-    public UserResponse getUser(Long id) {
-        User user = userRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
-        return userMapper.toResponse(user);
+    /**
+     * Get user by id.
+     *
+     * @param id user id
+     * @return user response
+     */
+    public UserResponse getUser(final Long id) {
+        final User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+        return this.userMapper.toResponse(user);
     }
 
-    public UserResponse getUserByEmail(String username) {
-        User user = userRepository.findByEmail(username)
-        .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
+    /**
+     * Get user by email.
+     *
+     * @param username email
+     * @return user response
+     */
+    public UserResponse getUserByEmail(final String username) {
+        final User user = this.userRepository.findByEmail(username)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + username));
 
-        return userMapper.toResponse(user);
+        return this.userMapper.toResponse(user);
     }
 }

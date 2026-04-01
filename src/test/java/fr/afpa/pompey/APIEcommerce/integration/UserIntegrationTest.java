@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ import jakarta.transaction.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class UserIntegrationTest {
+class UserIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -55,7 +56,7 @@ public class UserIntegrationTest {
 
     @Test
     @Transactional
-    void register_shouldCreateUserValid() throws Exception {
+    void registerShouldCreateUserValid() throws Exception {
         Role userRole = roleRepository.findByName("USER").get(); // Role configured in data.sql
 
         String email = "ron.weasly@hogwarts.com";
@@ -76,14 +77,14 @@ public class UserIntegrationTest {
                 .andExpect(jsonPath("$.lastName").value("Weasly"));
 
         User saved = userRepository.findByEmail(email).orElseThrow();
-        assert(saved.getFirstName()).equals("Ron");
-        assert(saved.getLastName()).equals("Weasly");
-        assert(passwordEncoder.matches(rawPassword, saved.getPassword()));
-        assert(saved.getRoles()).contains(userRole);
+        assert (saved.getFirstName()).equals("Ron");
+        assert (saved.getLastName()).equals("Weasly");
+        assert (passwordEncoder.matches(rawPassword, saved.getPassword()));
+        assert (saved.getRoles()).contains(userRole);
     }
 
     @Test
-    void register_duplicateEmail_shouldReturnConflict() throws Exception {
+    void registerDuplicateEmailShouldReturnConflict() throws Exception {
         Role userRole = roleRepository.findByName("USER").get();
 
         String email = "hermione@hogwarts.com";
@@ -107,11 +108,12 @@ public class UserIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Unable to create account. Please check the provided information."));
+                .andExpect(jsonPath("$.message")
+                        .value("Unable to create account. Please check the provided information."));
     }
 
     @Test
-    void login_withValidCredentials_shouldReturnToken() throws Exception {
+    void loginWithValidCredentialsShouldReturnToken() throws Exception {
         Role userRole = roleRepository.findByName("USER").get();
 
         String email = "harry@hogwarts.com";
@@ -137,7 +139,7 @@ public class UserIntegrationTest {
     }
 
     @Test
-    void login_withInvalidCredentials_shouldReturnUnauthorized() throws Exception {
+    void loginWithInvalidCredentialsShouldReturnUnauthorized() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setUsername("nonexistent@hogwarts.com");
         login.setPassword("wrongpass");
@@ -150,7 +152,7 @@ public class UserIntegrationTest {
     }
 
     @Test
-    void changePassword_valid_shouldReturnNoContent() throws Exception {
+    void changePasswordValidShouldReturnNoContent() throws Exception {
         Role userRole = roleRepository.findByName("USER").get();
 
         String email = "luna@hogwarts.com";
@@ -187,11 +189,11 @@ public class UserIntegrationTest {
                 .andExpect(status().isNoContent());
 
         User updated = userRepository.findByEmail(email).orElseThrow();
-        assert(passwordEncoder.matches(newPassword, updated.getPassword()));
+        assert (passwordEncoder.matches(newPassword, updated.getPassword()));
     }
 
     @Test
-    void changePassword_wrongCurrentPassword_shouldReturnBadRequest() throws Exception {
+    void changePasswordWrongCurrentPasswordShouldReturnBadRequest() throws Exception {
         Role userRole = roleRepository.findByName("USER").get();
 
         String email = "neville@hogwarts.com";

@@ -44,7 +44,7 @@ class UserControllerTest {
     private UserService userService;
 
     @Test
-    void login_withInvalidCredentials_shouldReturn401() throws Exception {
+    void loginWithInvalidCredentialsShouldReturn401() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setUsername("tom.riddles@horcrux.com");
         login.setPassword("nagini");
@@ -61,7 +61,7 @@ class UserControllerTest {
     }
 
     @Test
-    void login_withValidCredentials_shouldReturnToken() throws Exception {
+    void loginWithValidCredentialsShouldReturnToken() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setUsername("tom.riddles@horcrux.com");
         login.setPassword("nagini");
@@ -78,7 +78,7 @@ class UserControllerTest {
     }
 
     @Test
-    void register_withDuplicateEmail_shouldReturn409() throws Exception {
+    void registerWithDuplicateEmailShouldReturn409() throws Exception {
         UserCreateRequest register = new UserCreateRequest();
         register.setFirstName("Albus");
         register.setLastName("Dumbledore");
@@ -97,7 +97,7 @@ class UserControllerTest {
     }
 
     @Test
-    void changePassword_unauthenticated_shouldReturn401() throws Exception {
+    void changePasswordUnauthenticatedShouldReturn401() throws Exception {
         ChangePasswordRequest dto = new ChangePasswordRequest();
         dto.setCurrentPassword("oldpass");
         dto.setNewPassword("newpass");
@@ -110,7 +110,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void changePassword_wrongCurrentPassword_shouldReturn400() throws Exception {
+    void changePasswordWrongCurrentPasswordShouldReturn400() throws Exception {
         ChangePasswordRequest dto = new ChangePasswordRequest();
         dto.setCurrentPassword("wrongpassword");
         dto.setNewPassword("newpassword");
@@ -127,7 +127,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void changePassword_valid_shouldReturnNoContent() throws Exception {
+    void changePasswordValidShouldReturnNoContent() throws Exception {
         ChangePasswordRequest dto = new ChangePasswordRequest();
         dto.setCurrentPassword("correctpassword");
         dto.setNewPassword("newpassword");

@@ -30,7 +30,7 @@ import fr.afpa.pompey.APIEcommerce.model.Role;
 import fr.afpa.pompey.APIEcommerce.model.User;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
 
-public class UserServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -59,7 +59,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void register_validUser_shouldReturnUserResponse() {
+    void registerValidUserShouldReturnUserResponse() {
         UserCreateRequest request = new UserCreateRequest();
         request.setFirstName("Severus");
         request.setLastName("Rogue");
@@ -101,7 +101,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void register_duplicateEmail_shouldThrowConflictException() {
+    void registerDuplicateEmailShouldThrowConflictException() {
         UserCreateRequest request = new UserCreateRequest();
         request.setFirstName("Jane");
         request.setLastName("Doe");
@@ -124,7 +124,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void changePassword_wrongCurrentPassword_shouldThrowAuthException() {
+    void changePasswordWrongCurrentPasswordShouldThrowAuthException() {
         String email = "verify@example.com";
 
         User existingUser = new User();
@@ -144,7 +144,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void changePassword_correctCurrentPassword_shouldEncodeAndSave() {
+    void changePasswordCorrectCurrentPasswordShouldEncodeAndSave() {
         String email = "verify@example.com";
 
         User existingUser = new User();

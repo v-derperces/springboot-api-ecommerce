@@ -34,7 +34,7 @@ import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class UserAdminIntegrationTest {
+class UserAdminIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -55,7 +55,7 @@ public class UserAdminIntegrationTest {
 
     @Test
     @WithMockUser(username = "admin@example.com", roles = "ADMIN")
-    void createUser_asAdmin_shouldReturnCreatedAndPersisted() throws Exception {
+    void createUserAsAdminShouldReturnCreatedAndPersisted() throws Exception {
         Long userRoleId = roleRepository.findByName("USER").orElseThrow().getRoleId();
         UserAdminCreateRequest request = new UserAdminCreateRequest();
         request.setFirstName("Integration");
@@ -84,7 +84,7 @@ public class UserAdminIntegrationTest {
 
     @Test
     @WithMockUser(username = "admin@example.com", roles = "ADMIN")
-    void updateUser_asAdmin_shouldUpdateExistingUser() throws Exception {
+    void updateUserAsAdminShouldUpdateExistingUser() throws Exception {
         UserAdminResponse created = createUser("update.user@example.com");
 
         UserAdminUpdateRequest updateRequest = new UserAdminUpdateRequest();
@@ -116,7 +116,7 @@ public class UserAdminIntegrationTest {
 
     @Test
     @WithMockUser(username = "admin@example.com", roles = "ADMIN")
-    void deleteUser_asAdmin_shouldRemoveUser() throws Exception {
+    void deleteUserAsAdminShouldRemoveUser() throws Exception {
         UserAdminResponse created = createUser("delete.user@example.com");
 
         mockMvc.perform(delete("/users/" + created.getId()))
@@ -127,7 +127,7 @@ public class UserAdminIntegrationTest {
 
     @Test
     @WithMockUser(username = "admin@example.com", roles = "ADMIN")
-    void getUsers_asAdmin_shouldReturnList() throws Exception {
+    void getUsersAsAdminShouldReturnList() throws Exception {
         createUser("list.user1@example.com");
         createUser("list.user2@example.com");
 

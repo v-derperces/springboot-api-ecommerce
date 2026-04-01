@@ -1,5 +1,11 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
+import java.util.List;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminCreateRequest;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserAdminUpdateRequest;
@@ -11,26 +17,30 @@ import fr.afpa.pompey.APIEcommerce.model.User;
 import fr.afpa.pompey.APIEcommerce.repository.OrderRepository;
 import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
-
+/**
+ * Service for admin-level user management flows.
+ */
 @Service
 public class UserAdminService {
 
+    /** Repository to read/write users. */
     private final UserRepository userRepository;
 
+    /** Repository to read orders related to users. */
     private final OrderRepository orderRepository;
 
+    /** Repository to read role details. */
     private final RoleRepository roleRepository;
 
+    /** Mapper for converting between admin user DTOs and User entities. */
     private final UserMapper userMapper;
 
+    /** Encoder for handling user passwords. */
     private final PasswordEncoder passwordEncoder;
 
-    public UserAdminService(UserRepository userRepository, OrderRepository orderRepository, UserMapper userMapper, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+    public UserAdminService(final UserRepository userRepository, final OrderRepository orderRepository,
+            final UserMapper userMapper, final PasswordEncoder passwordEncoder, final RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.roleRepository = roleRepository;
@@ -38,61 +48,96 @@ public class UserAdminService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Get all admin users.
+     *
+     * @return list of user admin responses
+     */
     public List<UserAdminResponse> getUsers() {
-        return userRepository.findAll().stream().map(userMapper::toResponseAdmin).toList();
+        return this.userRepository.findAll().stream().map(this.userMapper::toResponseAdmin).toList();
     }
 
-    public List<User> getUsersByRole(String role) {
-        return userRepository.findUsersByRole(role);
+    /**
+     * Get users by role name.
+     *
+     * @param role role name
+     * @return list of users
+     */
+    public List<User> getUsersByRole(final String role) {
+        return this.userRepository.findUsersByRole(role);
     }
 
-    public UserAdminResponse getUser(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException(
-            "User not found with id: " + id));
-            return userMapper.toResponseAdmin(user);
-        }
+    /**
+     * Get a user by id.
+     *
+     * @param id user id
+     * @return user admin response
+     */
+    public UserAdminResponse getUser(final Long id) {
+        final User user = this.userRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                "User not found with id: " + id));
+        return this.userMapper.toResponseAdmin(user);
+    }
 
-        public UserAdminResponse createUser(UserAdminCreateRequest request) {
-            try {
-                User user = userMapper.toEntity(request);
-                user.setPassword(passwordEncoder.encode(request.getPassword()));
+    /**
+     * Create a user (admin-level).
+     *
+     * @param request user create request
+     * @return created user admin response
+     */
+    public UserAdminResponse createUser(final UserAdminCreateRequest request) {
+        try {
+            final User user = this.userMapper.toEntity(request);
+            user.setPassword(this.passwordEncoder.encode(request.getPassword()));
 
-                List<Role> roles = roleRepository.findAllById(request.getRoles());
-                user.setRoles(roles);
+            final List<Role> roles = this.roleRepository.findAllById(request.getRoles());
+            user.setRoles(roles);
 
-                User savedUser = userRepository.save(user);
-                return userMapper.toResponseAdmin(savedUser);
-            } catch (DataIntegrityViolationException e) {
-                throw new ConflictException("Unable to create account. Provided information is incorrect");
-            }
-        }
-
-        public UserAdminResponse updateUser(Long id, UserAdminUpdateRequest request) {
-            User existingUser = userRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
-
-            existingUser.setFirstName(request.getFirstName());
-            existingUser.setLastName(request.getLastName());
-            existingUser.setEmail(request.getEmail());
-            existingUser.setPhone(request.getPhone());
-            existingUser.setAddress(request.getAddress());
-            existingUser.setActive(request.isActive());
-
-            List<Role> roles = roleRepository.findByRoleIdIn(request.getRoles());
-            existingUser.setRoles(roles);
-
-            try {
-                User updatedUser = userRepository.save(existingUser);
-                return userMapper.toResponseAdmin(updatedUser);
-            } catch (DataIntegrityViolationException e) {
-                throw new ConflictException("Unable to update account. Provided information is incorrect");
-            }
-        }
-
-        public void deleteUser(Long id) {
-            if (orderRepository.existsByUser_UserId(id)) {
-                throw new ConflictException("User has associated orders. Deactivate instead of deleting");
-            }
-            userRepository.deleteById(id);
+            final User savedUser = this.userRepository.save(user);
+            return this.userMapper.toResponseAdmin(savedUser);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Unable to create account. Provided information is incorrect");
         }
     }
+
+    /**
+     * Update a user.
+     *
+     * @param id      user id
+     * @param request user update request
+     * @return updated user admin response
+     */
+    public UserAdminResponse updateUser(final Long id, final UserAdminUpdateRequest request) {
+        final User existingUser = this.userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
+
+        existingUser.setFirstName(request.getFirstName());
+        existingUser.setLastName(request.getLastName());
+        existingUser.setEmail(request.getEmail());
+        existingUser.setPhone(request.getPhone());
+        existingUser.setAddress(request.getAddress());
+        existingUser.setActive(request.isActive());
+
+        final List<Role> roles = this.roleRepository.findByRoleIdIn(request.getRoles());
+        existingUser.setRoles(roles);
+
+        try {
+            final User updatedUser = this.userRepository.save(existingUser);
+            return this.userMapper.toResponseAdmin(updatedUser);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Unable to update account. Provided information is incorrect");
+        }
+    }
+
+    /**
+     * Delete a user by id.
+     *
+     * @param id user id
+     */
+    public void deleteUser(final Long id) {
+        if (this.orderRepository.existsByUser_UserId(id)) {
+            throw new ConflictException("User has associated orders. Deactivate instead of deleting");
+        }
+        this.userRepository.deleteById(id);
+    }
+}

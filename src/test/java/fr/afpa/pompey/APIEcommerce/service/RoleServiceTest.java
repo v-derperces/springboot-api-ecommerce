@@ -26,7 +26,7 @@ import fr.afpa.pompey.APIEcommerce.mapper.RoleMapper;
 import fr.afpa.pompey.APIEcommerce.model.Role;
 import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 
-public class RoleServiceTest {
+class RoleServiceTest {
     @Mock
     private RoleRepository roleRepository;
 
@@ -42,7 +42,7 @@ public class RoleServiceTest {
     }
 
     @Test
-    void getRoleById_notFound_shouldThrowRoleNotFoundException() {
+    void getRoleByIdNotFoundShouldThrowRoleNotFoundException() {
         long roleId = 999;
         when(roleRepository.findById(roleId)).thenReturn(Optional.empty());
 
@@ -53,7 +53,7 @@ public class RoleServiceTest {
         assertTrue(exception.getMessage().contains("No role found with id: 999"));    }
 
         @Test
-        void createRole_valid_shouldSaveRole() {
+        void createRoleValidShouldSaveRole() {
             RoleRequest request = new RoleRequest();
             request.setName("ADMIN");
 
@@ -80,7 +80,7 @@ public class RoleServiceTest {
         }
 
         @Test
-        void createRole_duplicateName_shouldThrowConflictException() {
+        void createRoleDuplicateNameShouldThrowConflictException() {
             RoleRequest request = new RoleRequest();
             request.setName("ADMIN");
 
