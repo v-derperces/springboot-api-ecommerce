@@ -1,51 +1,91 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Role;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleRequest;
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleResponse;
 import fr.afpa.pompey.APIEcommerce.service.RoleService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
+/**
+ * REST controller for role-based endpoints.
+ *
+ * Provides operations for creating, reading, updating, and deleting roles.
+ */
 @RestController
 public class RoleController {
 
+    /** Service for role business operations. */
     private final RoleService roleService;
 
-    public RoleController(RoleService roleService) {
+    public RoleController(final RoleService roleService) {
         this.roleService = roleService;
     }
 
-    @PostMapping("/role")
-    public Role createRole(@Valid @RequestBody Role role) throws CustomHttpException {
-        return roleService.saveRole(role);
+    /**
+     * Create a new role.
+     *
+     * @param request the role request payload
+     * @return the created role response with HTTP 201
+     */
+    @PostMapping("/roles")
+    public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody final RoleRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.roleService.createRole(request));
     }
 
+    /**
+     * Get all roles.
+     *
+     * @return list of role responses with HTTP 200
+     */
     @GetMapping("/roles")
-    public Iterable<Role> getRoles() {
-        return roleService.getRoles();
+    public ResponseEntity<List<RoleResponse>> getRoles() {
+        return ResponseEntity.ok(this.roleService.getRoles());
     }
 
-    @GetMapping("/role/{id}")
-    public Role getRole(@PathVariable int id) {
-        Optional<Role> r = roleService.getRole(id);
-        return r.orElse(null);
+    /**
+     * Get a role by id.
+     *
+     * @param id the role id
+     * @return role response with HTTP 200
+     */
+    @GetMapping("/roles/{id}")
+    public ResponseEntity<RoleResponse> getRole(@PathVariable final Long id) {
+        return ResponseEntity.ok(this.roleService.getRole(id));
     }
 
-    @PutMapping("/role/{id}")
-    public Role updateRole(@Valid @RequestBody Role role, @PathVariable int id) throws CustomHttpException {
-        Optional<Role> existingOpt = roleService.getRole(id);
-        if (existingOpt.isPresent()) {
-            Role existing = existingOpt.get();
-            existing.setName(role.getName());
-            return roleService.saveRole(existing);
-        }
-        return null;
+    /**
+     * Update a role by id.
+     *
+     * @param request the new role values
+     * @param id      the role id
+     * @return updated role response with HTTP 200
+     */
+    @PutMapping("/roles/{id}")
+    public ResponseEntity<RoleResponse> updateRole(@Valid @RequestBody final RoleRequest request,
+            @PathVariable final Long id) {
+        return ResponseEntity.ok(this.roleService.updateRole(id, request));
     }
 
-    @DeleteMapping("/role/{id}")
-    public void deleteRole(@PathVariable int id) throws CustomHttpException {
-        roleService.deleteRole(id);
+    /**
+     * Delete a role by id.
+     *
+     * @param id the role id
+     * @return no content response with HTTP 204
+     */
+    @DeleteMapping("/roles/{id}")
+    public ResponseEntity<Void> deleteRole(@PathVariable final Long id) {
+        this.roleService.deleteRole(id);
+        return ResponseEntity.noContent().build();
     }
 }

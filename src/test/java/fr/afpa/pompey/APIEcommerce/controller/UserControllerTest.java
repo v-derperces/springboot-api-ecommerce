@@ -1,27 +1,33 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.afpa.pompey.APIEcommerce.model.Role;
-import fr.afpa.pompey.APIEcommerce.model.User;
-import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
-import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import fr.afpa.pompey.APIEcommerce.dto.LoginRequest;
+import fr.afpa.pompey.APIEcommerce.dto.user.ChangePasswordRequest;
+import fr.afpa.pompey.APIEcommerce.dto.user.UserCreateRequest;
+import fr.afpa.pompey.APIEcommerce.exceptions.AuthException;
+import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
+import fr.afpa.pompey.APIEcommerce.service.UserService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -32,66 +38,106 @@ class UserControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private UserRepository userRepository;
+    private ObjectMapper objectMapper;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    @MockitoBean
+    private UserService userService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Test
+    void loginWithInvalidCredentialsShouldReturn401() throws Exception {
+        LoginRequest login = new LoginRequest();
+        login.setUsername("tom.riddles@horcrux.com");
+        login.setPassword("nagini");
 
-    private User user;
-    private Role roleUser;
+        // Simulate invalid credentials
+        when(userService.login(login.getUsername(), login.getPassword()))
+        .thenThrow(new AuthException("Invalid credentials", HttpStatus.UNAUTHORIZED));
 
-    @BeforeEach
-    void setUp() {
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
-
-        roleUser = new Role();
-        roleUser.setName("USER");
-        roleRepository.save(roleUser);
-
-        user = new User();
-        user.setFirstName("Ron");
-        user.setLastName("Weasley");
-        user.setEmail("ron@hogwarts.com");
-        user.setRoles(new ArrayList<>(List.of(roleUser)));
-        user.setPassword(passwordEncoder.encode("Babbity*Rabbity"));
-        userRepository.save(user);
+        mockMvc.perform(post("/api/auth/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(login)))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
     @Test
-    void userNotAuthentificatedAccessDenied() throws Exception {
-        mockMvc.perform(get("/me")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+    void loginWithValidCredentialsShouldReturnToken() throws Exception {
+        LoginRequest login = new LoginRequest();
+        login.setUsername("tom.riddles@horcrux.com");
+        login.setPassword("nagini");
+
+        // Simulate valid login returning JWT token
+        when(userService.login(login.getUsername(), login.getPassword()))
+        .thenReturn("dummy-jwt-token");
+
+        mockMvc.perform(post("/api/auth/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(login)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.token").value("dummy-jwt-token"));
     }
 
     @Test
-    void userWithUserRoleCanAccessMeEndpoint() throws Exception {
+    void registerWithDuplicateEmailShouldReturn409() throws Exception {
+        UserCreateRequest register = new UserCreateRequest();
+        register.setFirstName("Albus");
+        register.setLastName("Dumbledore");
+        register.setEmail("phoenix@hogwarts.com");
+        register.setPassword("password");
 
-        String loginJson = """
-        {
-            "username": "ron@hogwarts.com",
-            "password": "Babbity*Rabbity"
-        }
-        """;
-        String response = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginJson))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse().getContentAsString();
+        // Simulate duplicate email
+        when(userService.register(any(UserCreateRequest.class)))
+        .thenThrow(new ConflictException("Email already exists"));
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(response);
-        String token = node.get("token").asText();
-
-        mockMvc.perform(get("/me")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/auth/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(register)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
+    @Test
+    void changePasswordUnauthenticatedShouldReturn401() throws Exception {
+        ChangePasswordRequest dto = new ChangePasswordRequest();
+        dto.setCurrentPassword("oldpass");
+        dto.setNewPassword("newpass");
+
+        mockMvc.perform(put("/me/password")
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(dto)))
+        .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void changePasswordWrongCurrentPasswordShouldReturn400() throws Exception {
+        ChangePasswordRequest dto = new ChangePasswordRequest();
+        dto.setCurrentPassword("wrongpassword");
+        dto.setNewPassword("newpassword");
+
+        doThrow(new AuthException("Current password incorrect", HttpStatus.BAD_REQUEST))
+        .when(userService).changePassword(any(String.class), any(ChangePasswordRequest.class));
+
+        mockMvc.perform(put("/me/password")
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(dto)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("Current password incorrect"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void changePasswordValidShouldReturnNoContent() throws Exception {
+        ChangePasswordRequest dto = new ChangePasswordRequest();
+        dto.setCurrentPassword("correctpassword");
+        dto.setNewPassword("newpassword");
+
+        // Simulate successful change
+        doNothing().when(userService).changePassword(any(String.class), any(ChangePasswordRequest.class));
+
+        mockMvc.perform(put("/me/password")
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(dto)))
+        .andExpect(status().isNoContent());
+    }
 }

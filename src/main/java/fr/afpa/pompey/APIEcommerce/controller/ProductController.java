@@ -30,7 +30,7 @@ public class ProductController {
         List<Category> categories = new ArrayList<>();
         if (product.getCategories() != null) {
             for (Category c : product.getCategories()) {
-                Category cat = categoryService.getCategory(c.getCategoryId().intValue())
+                Category cat = categoryService.getCategory(c.getCategoryId())
                         .orElseThrow(() -> new CustomHttpException("Category not found: " + c.getCategoryId(),
                                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase() ));
                 categories.add(cat);
@@ -47,7 +47,7 @@ public class ProductController {
     }
 
     @GetMapping("/product/{id}")
-    public Product getProduct(@PathVariable("id") int id) {
+    public Product getProduct(@PathVariable("id") Long id) {
         Optional<Product> product = productService.getProduct(id);
         if(product.isPresent()){
             return product.get();
@@ -56,13 +56,13 @@ public class ProductController {
     }
 
     @PutMapping("/product/{id}")
-    public Product updateProduct(@Valid @RequestBody Product product, @PathVariable("id") int id) throws CustomHttpException {
+    public Product updateProduct(@Valid @RequestBody Product product, @PathVariable("id") Long id) throws CustomHttpException {
         Optional<Product> p = productService.getProduct(id);
         if(p.isPresent()){ // Checks if the product already exists.
             List<Category> categories = new ArrayList<>();
             if (product.getCategories() != null) {
                 for (Category c : product.getCategories()) {
-                    Category cat = categoryService.getCategory(c.getCategoryId().intValue())
+                    Category cat = categoryService.getCategory(c.getCategoryId())
                             .orElseThrow(() -> new CustomHttpException("Category not found: " + c.getCategoryId(),
                                     HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase() ));
                     categories.add(cat);
@@ -82,7 +82,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/product/{id}")
-    public void deleteProduct(@PathVariable("id") int id) throws CustomHttpException {
+    public void deleteProduct(@PathVariable("id") Long id) throws CustomHttpException {
         productService.deleteProduct(id);
     }
 }

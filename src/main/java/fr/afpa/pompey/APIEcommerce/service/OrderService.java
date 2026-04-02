@@ -19,7 +19,7 @@ public class OrderService {
         return orderRepository.findAll();
     }
 
-    public Optional<Order> getOrder(int id) {
+    public Optional<Order> getOrder(Long id) {
         return orderRepository.findById(id);
     }
 
@@ -27,7 +27,7 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    public void deleteOrder(int id) {
+    public void deleteOrder(Long id) {
         orderRepository.deleteById(id);
     }
 

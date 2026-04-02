@@ -1,49 +1,115 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Role;
-import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
+import java.util.List;
+
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleRequest;
+import fr.afpa.pompey.APIEcommerce.dto.role.RoleResponse;
+import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
+import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
+import fr.afpa.pompey.APIEcommerce.mapper.RoleMapper;
+import fr.afpa.pompey.APIEcommerce.model.Role;
+import fr.afpa.pompey.APIEcommerce.repository.RoleRepository;
 
+/**
+ * Service responsible for role business logic and persistence operations.
+ */
 @Service
 public class RoleService {
 
+    /** Repository used to access role data storage. */
     private final RoleRepository roleRepository;
 
-    public RoleService(RoleRepository roleRepository) {
+    /** Mapper used to convert between role entities and DTOs. */
+    private final RoleMapper roleMapper;
+
+    public RoleService(final RoleRepository roleRepository, final RoleMapper roleMapper) {
         this.roleRepository = roleRepository;
+        this.roleMapper = roleMapper;
     }
 
-    public Iterable<Role> getRoles() {
-        return roleRepository.findAll();
+    /**
+     * Get all roles.
+     *
+     * @return list of role responses
+     */
+    public List<RoleResponse> getRoles() {
+        return this.roleRepository.findAll().stream().map(this.roleMapper::toDTO).toList();
     }
 
-    public Optional<Role> getRole(int id) {
-        return roleRepository.findById(id);
+    /**
+     * Get role by id.
+     *
+     * @param id role id
+     * @return role response
+     */
+    public RoleResponse getRole(final Long id) {
+        final Role role = this.roleRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Cannot get role: No role found with id: " + id));
+
+        return this.roleMapper.toDTO(role);
     }
 
-    public Role saveRole(Role role) throws CustomHttpException {
-        try{
-            return roleRepository.save(role);
-        }catch (DataIntegrityViolationException e){
-            throw new CustomHttpException("Role '" + role.getName() + "' already exists.",
-                    HttpStatus.CONFLICT.value(),
-                    HttpStatus.CONFLICT.getReasonPhrase());
+    /**
+     * Create a role.
+     *
+     * @param request role request payload
+     * @return created role response
+     */
+    public RoleResponse createRole(final RoleRequest request) {
+        try {
+            final Role role = this.roleMapper.toEntity(request);
+            return this.roleMapper.toDTO(this.roleRepository.save(role));
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(
+                    "Cannot create role: a role with name '" + request.getName() + "' already exists");
         }
     }
 
-    public void deleteRole(int id) throws CustomHttpException {
-        try{
-            roleRepository.deleteById(id);
-        }catch (DataIntegrityViolationException e){
-            throw new CustomHttpException("Role cannot be deleted. It is associated to a user",
-                    HttpStatus.CONFLICT.value(),
-                    HttpStatus.CONFLICT.getReasonPhrase());
+    /**
+     * Update a role.
+     *
+     * @param id      role id
+     * @param request role request payload
+     * @return updated role response
+     */
+    public RoleResponse updateRole(final Long id, final RoleRequest request) {
+        final Role existingRole = this.roleRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Cannot update role: No role found with id: " + id));
+        try {
+            existingRole.setName(request.getName());
+            return this.roleMapper.toDTO(this.roleRepository.save(existingRole));
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(
+                    "Cannot update role: a role with name '" + request.getName() + "' already exists");
         }
+    }
+
+    /**
+     * Delete role by id.
+     *
+     * @param id role id
+     */
+    public void deleteRole(final Long id) {
+        try {
+            this.roleRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(
+                    "Role with id " + id + " cannot be delete because it is associated with a user.");
+        }
+    }
+
+    /**
+     * Get role by name.
+     *
+     * @param name role name
+     * @return role entity
+     */
+    public Role getRoleByName(final String name) {
+        return this.roleRepository.findByName(name).orElseThrow(
+                () -> new NotFoundException("Cannot get role: No role found with name: " + name));
     }
 
 }

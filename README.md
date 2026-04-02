@@ -2,7 +2,7 @@
 
 ## Description
 
-This Spring Boot API manages the core functionalities of an e-commerce application.  
+This Spring Boot API manages the core functionalities of an e-commerce application.
 It allows managing users, their roles, products, categories, and orders.
 
 ## Main Features
@@ -36,27 +36,31 @@ Role        Contains id and name
 
 # Key Endpoints
 
-Endpoint                   Method  Description
-/api/auth/register             POST    Create a new user account
-/api/auth/login                POST    Log in
+Endpoint                    Method      Description
+/api/auth/register          POST    Create a new user account
+/api/auth/login             POST    Log in
 
-/products                  GET     List all products
-/product                   POST    Create a product
-/product/{id}              PUT     Update a product
-/product/{id}              DELETE  Delete a product
+/me                         GET     Get profil information
+/me                         PUT     Change profil information
+/me/password                PUT     Change password
 
-/categories                GET     List all categories
-/categorie                 POST    Create a category
-/categorie/{id}            PUT     Update a category
-/categorie/{id}            DELETE  Delete a category
+/users                      GET     List all users
+/users                      POST    Create a new user with roles
+/users/{id}                 PUT     Update user information
+/users/{id}                 DELETE  Delete user (only allower if there are no orders associated)
 
-/order                     POST    Create an order
-/order/{id}                GET     Get an order by ID
+/products                   GET     List all products
+/product                    POST    Create a product
+/product/{id}               PUT     Update a product
+/product/{id}               DELETE  Delete a product
 
-/users                     GET     List all users
-/user                      POST    Register a new user
-/user/{id}                 PUT     Update a user
-/user/{id}                 DELETE  Delete a user
+/categories                 GET     List all categories
+/categorie                  POST    Create a category
+/categorie/{id}             PUT     Update a category
+/categorie/{id}             DELETE  Delete a category
+
+/order                      POST    Create an order
+/order/{id}                 GET     Get an order by ID
 
 # Prerequisites
 

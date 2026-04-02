@@ -1,24 +1,16 @@
 package fr.afpa.pompey.APIEcommerce.dto;
 
+import lombok.Data;
+
+/**
+ * Payload for login request containing username and password.
+ */
+@Data
 public class LoginRequest {
+
+    /** Username/email to authenticate. */
     private String username;
+
+    /** Password to authenticate. */
     private String password;
-
-    public LoginRequest() {}
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

@@ -22,7 +22,7 @@ public class CategoryService {
         return categorieRepository.findAll();
     }
 
-    public Optional<Category> getCategory(int id) {
+    public Optional<Category> getCategory(Long id) {
         return categorieRepository.findById(id);
     }
 
@@ -37,7 +37,7 @@ public class CategoryService {
         }
     }
 
-    public void deleteCategory(int id) throws CustomHttpException {
+    public void deleteCategory(Long id) throws CustomHttpException {
         try{
             categorieRepository.deleteById(id);
         }catch (DataIntegrityViolationException e){

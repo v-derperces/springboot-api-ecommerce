@@ -25,7 +25,7 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    public Optional<Product> getProduct(int id) {
+    public Optional<Product> getProduct(Long id) {
         return productRepository.findById(id);
     }
 
@@ -39,7 +39,7 @@ public class ProductService {
         }
     }
 
-    public void deleteProduct(int id) throws CustomHttpException {
+    public void deleteProduct(Long id) throws CustomHttpException {
 
         Optional<Product> product = productRepository.findById(id);
         if (product.isPresent()) {

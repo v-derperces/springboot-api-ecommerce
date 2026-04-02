@@ -6,6 +6,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface OrderlineRepository extends CrudRepository<Orderline,Integer> {
+public interface OrderlineRepository extends CrudRepository<Orderline,Long> {
     boolean existsByProduct(Product product);
 }

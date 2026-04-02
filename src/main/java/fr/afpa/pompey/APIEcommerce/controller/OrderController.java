@@ -27,13 +27,13 @@ public class OrderController {
     }
 
     @GetMapping("/order/{id}")
-    public Order getOrder(@PathVariable int id) {
+    public Order getOrder(@PathVariable Long id) {
         Optional<Order> c = orderService.getOrder(id);
         return c.orElse(null);
     }
 
     @PutMapping("/order/{id}")
-    public Order updateOrder(@Valid @RequestBody Order order, @PathVariable int id) {
+    public Order updateOrder(@Valid @RequestBody Order order, @PathVariable Long id) {
         Optional<Order> existingOpt = orderService.getOrder(id);
         if (existingOpt.isPresent()) {
             Order existing = existingOpt.get();
@@ -51,7 +51,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/order/{id}")
-    public void deleteOrder(@PathVariable int id) {
+    public void deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
     }
 
