@@ -1,17 +1,23 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
 import fr.afpa.pompey.APIEcommerce.model.Category;
 import fr.afpa.pompey.APIEcommerce.model.Product;
 import fr.afpa.pompey.APIEcommerce.service.CategoryService;
 import fr.afpa.pompey.APIEcommerce.service.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 public class ProductController {
@@ -28,14 +34,15 @@ public class ProductController {
     public Product createProduct(@Valid @RequestBody Product product) throws CustomHttpException {
 
         List<Category> categories = new ArrayList<>();
-        if (product.getCategories() != null) {
-            for (Category c : product.getCategories()) {
-                Category cat = categoryService.getCategory(c.getCategoryId())
-                        .orElseThrow(() -> new CustomHttpException("Category not found: " + c.getCategoryId(),
-                                HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase() ));
-                categories.add(cat);
-            }
-        }
+        // if (product.getCategories() != null) {
+        //     for (Category c : product.getCategories()) {
+        //         Category cat = categoryService.getCategory(c.getCategoryId())
+        //                 .orElseThrow(() -> new CustomHttpException("Category not found: " +
+        //                         c.getCategoryId(),
+        //                         HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
+        //         categories.add(cat);
+        //     }
+        // }
 
         product.setCategories(categories);
         return productService.saveProduct(product);
@@ -49,25 +56,27 @@ public class ProductController {
     @GetMapping("/product/{id}")
     public Product getProduct(@PathVariable("id") Long id) {
         Optional<Product> product = productService.getProduct(id);
-        if(product.isPresent()){
+        if (product.isPresent()) {
             return product.get();
         }
         return null;
     }
 
     @PutMapping("/product/{id}")
-    public Product updateProduct(@Valid @RequestBody Product product, @PathVariable("id") Long id) throws CustomHttpException {
+    public Product updateProduct(@Valid @RequestBody Product product, @PathVariable("id") Long id)
+            throws CustomHttpException {
         Optional<Product> p = productService.getProduct(id);
-        if(p.isPresent()){ // Checks if the product already exists.
+        if (p.isPresent()) { // Checks if the product already exists.
             List<Category> categories = new ArrayList<>();
-            if (product.getCategories() != null) {
-                for (Category c : product.getCategories()) {
-                    Category cat = categoryService.getCategory(c.getCategoryId())
-                            .orElseThrow(() -> new CustomHttpException("Category not found: " + c.getCategoryId(),
-                                    HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase() ));
-                    categories.add(cat);
-                }
-            }
+            // if (product.getCategories() != null) {
+            //     for (Category c : product.getCategories()) {
+            //         Category cat = categoryService.getCategory(c.getCategoryId())
+            //                 .orElseThrow(() -> new CustomHttpException("Category not found: " +
+            //                         c.getCategoryId(),
+            //                         HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
+            //         categories.add(cat);
+            //     }
+            // }
 
             Product prod = p.get();
             prod.setUnitPrice(product.getUnitPrice());

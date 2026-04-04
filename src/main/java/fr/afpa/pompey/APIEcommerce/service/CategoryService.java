@@ -1,49 +1,103 @@
 package fr.afpa.pompey.APIEcommerce.service;
 
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Category;
-import fr.afpa.pompey.APIEcommerce.repository.CategoryRepository;
+import java.util.List;
+
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import fr.afpa.pompey.APIEcommerce.dto.category.CategoryRequest;
+import fr.afpa.pompey.APIEcommerce.dto.category.CategoryResponse;
+import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
+import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
+import fr.afpa.pompey.APIEcommerce.mapper.CategoryMapper;
+import fr.afpa.pompey.APIEcommerce.model.Category;
+import fr.afpa.pompey.APIEcommerce.repository.CategoryRepository;
 
+/**
+ * Service responsible for category business logic and persistence operations.
+ */
 @Service
 public class CategoryService {
 
-    private final CategoryRepository categorieRepository;
+    /** Repository used to access category data storage. */
+    private final CategoryRepository categoryRepository;
 
-    public CategoryService(CategoryRepository categorieRepository) {
-        this.categorieRepository = categorieRepository;
+    /** Mapper used to convert between category entities and DTOs. */
+    private final CategoryMapper categoryMapper;
+
+    public CategoryService(final CategoryRepository categoryRepository, final CategoryMapper categoryMapper) {
+        this.categoryRepository = categoryRepository;
+        this.categoryMapper = categoryMapper;
     }
 
-    public Iterable<Category> getCategories() {
-        return categorieRepository.findAll();
+    /**
+     * Get all categories.
+     *
+     * @return list of category responses
+     */
+    public List<CategoryResponse> getCategories() {
+        return this.categoryRepository.findAll().stream().map(this.categoryMapper::toDTO).toList();
     }
 
-    public Optional<Category> getCategory(Long id) {
-        return categorieRepository.findById(id);
+    /**
+     * Get category by id.
+     *
+     * @param id category id
+     * @return category response
+     */
+    public CategoryResponse getCategory(final Long id) {
+        final Category category = this.categoryRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Cannot get category: No category found with id: " + id));
+
+        return this.categoryMapper.toDTO(category);
     }
 
-    public Category saveCategory(Category categorie) throws CustomHttpException {
+    /**
+     * Create a category.
+     *
+     * @param request category request payload
+     * @return created category response
+     */
+    public CategoryResponse createCategory(final CategoryRequest request) {
         try {
-            return categorieRepository.save(categorie);
+            final Category category = this.categoryMapper.toEntity(request);
+            return this.categoryMapper.toDTO(this.categoryRepository.save(category));
         } catch (DataIntegrityViolationException e) {
-            throw new CustomHttpException("Category '" + categorie.getCategoryId()
-                    + "' already exists in database.",
-                    HttpStatus.CONFLICT.value(),
-                    HttpStatus.CONFLICT.getReasonPhrase());
+            throw new ConflictException(
+                    "Cannot create category: a category with name '" + request.getName() + "' already exists");
         }
     }
 
-    public void deleteCategory(Long id) throws CustomHttpException {
-        try{
-            categorieRepository.deleteById(id);
-        }catch (DataIntegrityViolationException e){
-            throw new CustomHttpException("A category linked to a product cannot be deleted.",
-                    HttpStatus.CONFLICT.value(),
-                    HttpStatus.CONFLICT.getReasonPhrase());
+    /**
+     * Update a category.
+     *
+     * @param id      category id
+     * @param request category request payload
+     * @return updated category response
+     */
+    public CategoryResponse updateCategory(final Long id, final CategoryRequest request) {
+        final Category existingCategory = this.categoryRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Cannot update category: No category found with id: " + id));
+        try {
+            existingCategory.setName(request.getName());
+            return this.categoryMapper.toDTO(this.categoryRepository.save(existingCategory));
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(
+                    "Cannot update category: a category with name '" + request.getName() + "' already exists");
+        }
+    }
+
+    /**
+     * Delete category by id.
+     *
+     * @param id category id
+     */
+    public void deleteCategory(final Long id) {
+        try {
+            this.categoryRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(
+                    "Category with id " + id + " cannot be deleted because it is associated with a product");
         }
     }
 }
