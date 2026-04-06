@@ -100,4 +100,9 @@ public class CategoryService {
                     "Category with id " + id + " cannot be deleted because it is associated with a product");
         }
     }
+
+
+    public List<Category> getCategoriesByIds(final List<Long> categoryIds) {
+        return this.categoryRepository.findAllById(categoryIds);
+    }
 }

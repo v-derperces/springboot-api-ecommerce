@@ -1,9 +1,9 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,86 +12,80 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Category;
-import fr.afpa.pompey.APIEcommerce.model.Product;
-import fr.afpa.pompey.APIEcommerce.service.CategoryService;
+import fr.afpa.pompey.APIEcommerce.dto.product.ProductRequest;
+import fr.afpa.pompey.APIEcommerce.dto.product.ProductResponse;
 import fr.afpa.pompey.APIEcommerce.service.ProductService;
 import jakarta.validation.Valid;
 
+/**
+ * REST controller for product-based endpoints.
+ *
+ * Provides operations for creating, reading, updating, and deleting products.
+ */
 @RestController
 public class ProductController {
 
-    private ProductService productService;
-    private CategoryService categoryService;
+    /** Service for product business operations. */
+    private final ProductService productService;
 
-    public ProductController(ProductService productService, CategoryService categoryService) {
+    public ProductController(final ProductService productService) {
         this.productService = productService;
-        this.categoryService = categoryService;
     }
 
-    @PostMapping("/product")
-    public Product createProduct(@Valid @RequestBody Product product) throws CustomHttpException {
-
-        List<Category> categories = new ArrayList<>();
-        // if (product.getCategories() != null) {
-        //     for (Category c : product.getCategories()) {
-        //         Category cat = categoryService.getCategory(c.getCategoryId())
-        //                 .orElseThrow(() -> new CustomHttpException("Category not found: " +
-        //                         c.getCategoryId(),
-        //                         HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
-        //         categories.add(cat);
-        //     }
-        // }
-
-        product.setCategories(categories);
-        return productService.saveProduct(product);
+    /**
+     * Create a new product.
+     *
+     * @param request the product request payload
+     * @return the created product response with HTTP 201
+     */
+    @PostMapping("/products")
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody final ProductRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.productService.createProduct(request));
     }
 
+    /**
+     * Get all products.
+     *
+     * @return list of product responses with HTTP 200
+     */
     @GetMapping("/products")
-    public Iterable<Product> getProducts() {
-        return productService.getProducts();
+    public ResponseEntity<List<ProductResponse>> getProducts() {
+        return ResponseEntity.ok(this.productService.getProducts());
     }
 
-    @GetMapping("/product/{id}")
-    public Product getProduct(@PathVariable("id") Long id) {
-        Optional<Product> product = productService.getProduct(id);
-        if (product.isPresent()) {
-            return product.get();
-        }
-        return null;
+    /**
+     * Get a product by id.
+     *
+     * @param id the product id
+     * @return product response with HTTP 200
+     */
+    @GetMapping("/products/{id}")
+    public ResponseEntity<ProductResponse> getProduct(@PathVariable final Long id) {
+        return ResponseEntity.ok(this.productService.getProduct(id));
     }
 
-    @PutMapping("/product/{id}")
-    public Product updateProduct(@Valid @RequestBody Product product, @PathVariable("id") Long id)
-            throws CustomHttpException {
-        Optional<Product> p = productService.getProduct(id);
-        if (p.isPresent()) { // Checks if the product already exists.
-            List<Category> categories = new ArrayList<>();
-            // if (product.getCategories() != null) {
-            //     for (Category c : product.getCategories()) {
-            //         Category cat = categoryService.getCategory(c.getCategoryId())
-            //                 .orElseThrow(() -> new CustomHttpException("Category not found: " +
-            //                         c.getCategoryId(),
-            //                         HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase()));
-            //         categories.add(cat);
-            //     }
-            // }
-
-            Product prod = p.get();
-            prod.setUnitPrice(product.getUnitPrice());
-            prod.setCategories(product.getCategories());
-            prod.setName(product.getName());
-            prod.setCategories(product.getCategories());
-
-            productService.saveProduct(prod);
-            return prod;
-        }
-        return null;
+    /**
+     * Update a product by id.
+     *
+     * @param request the new product values
+     * @param id      the product id
+     * @return updated product response with HTTP 200
+     */
+    @PutMapping("/products/{id}")
+    public ResponseEntity<ProductResponse> updateProduct(@Valid @RequestBody final ProductRequest request,
+            @PathVariable final Long id) {
+        return ResponseEntity.ok(this.productService.updateProduct(id, request));
     }
 
-    @DeleteMapping("/product/{id}")
-    public void deleteProduct(@PathVariable("id") Long id) throws CustomHttpException {
-        productService.deleteProduct(id);
+    /**
+     * Delete a product by id.
+     *
+     * @param id the product id
+     * @return no content response with HTTP 204
+     */
+    @DeleteMapping("/products/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable final Long id) {
+        this.productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,9 +1,10 @@
 package fr.afpa.pompey.APIEcommerce.repository;
 
-import fr.afpa.pompey.APIEcommerce.model.Product;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import fr.afpa.pompey.APIEcommerce.model.Product;
+
 @Repository
-public interface ProductRepository extends CrudRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long> {
 }
