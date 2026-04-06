@@ -1,55 +1,91 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
-import fr.afpa.pompey.APIEcommerce.exceptionhandler.CustomHttpException;
-import fr.afpa.pompey.APIEcommerce.model.Category;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import fr.afpa.pompey.APIEcommerce.dto.category.CategoryRequest;
+import fr.afpa.pompey.APIEcommerce.dto.category.CategoryResponse;
 import fr.afpa.pompey.APIEcommerce.service.CategoryService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
+/**
+ * REST controller for category-based endpoints.
+ *
+ * Provides operations for creating, reading, updating, and deleting categories.
+ */
 @RestController
 public class CategoryController {
 
+    /** Service for category business operations. */
     private final CategoryService categoryService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(final CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 
-    @PostMapping("/category")
-    public Category createCategory(@Valid @RequestBody Category category) throws CustomHttpException {
-        return categoryService.saveCategory(category);
+    /**
+     * Create a new category.
+     *
+     * @param request the category request payload
+     * @return the created category response with HTTP 201
+     */
+    @PostMapping("/categories")
+    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody final CategoryRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.categoryService.createCategory(request));
     }
 
+    /**
+     * Get all categories.
+     *
+     * @return list of category responses with HTTP 200
+     */
     @GetMapping("/categories")
-    public Iterable<Category> getCategories() {
-        return categoryService.getCategories();
+    public ResponseEntity<List<CategoryResponse>> getCategories() {
+        return ResponseEntity.ok(this.categoryService.getCategories());
     }
 
-    @GetMapping("/category/{id}")
-    public Category getCategory(@PathVariable("id") Long id) {
-        Optional<Category> category = categoryService.getCategory(id);
-        if(category.isPresent()){
-            return category.get();
-        }
-        return null;
+    /**
+     * Get a category by id.
+     *
+     * @param id the category id
+     * @return category response with HTTP 200
+     */
+    @GetMapping("/categories/{id}")
+    public ResponseEntity<CategoryResponse> getCategory(@PathVariable final Long id) {
+        return ResponseEntity.ok(this.categoryService.getCategory(id));
     }
 
-    @PutMapping("/category/{id}")
-    public Category updateCategory(@Valid @RequestBody Category category, @PathVariable("id") Long id) throws CustomHttpException {
-        Optional<Category> p = categoryService.getCategory(id); // Fetches the category from the database.
-        if(p.isPresent()){ // Checks if the category already exists.
-            Category cat = p.get();
-            cat.setName(category.getName());
-            categoryService.saveCategory(cat); // Update the category.
-            return cat;
-        }
-        return null;
+    /**
+     * Update a category by id.
+     *
+     * @param request the new category values
+     * @param id      the category id
+     * @return updated category response with HTTP 200
+     */
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<CategoryResponse> updateCategory(@Valid @RequestBody final CategoryRequest request,
+            @PathVariable final Long id) {
+        return ResponseEntity.ok(this.categoryService.updateCategory(id, request));
     }
 
-    @DeleteMapping("/category/{id}")
-    public void deleteCategory(@PathVariable("id") Long id) throws CustomHttpException {
-        categoryService.deleteCategory(id);
+    /**
+     * Delete a category by id.
+     *
+     * @param id the category id
+     * @return no content response with HTTP 204
+     */
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable final Long id) {
+        this.categoryService.deleteCategory(id);
+        return ResponseEntity.noContent().build();
     }
 }
