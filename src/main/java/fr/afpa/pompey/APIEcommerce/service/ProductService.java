@@ -108,7 +108,7 @@ public class ProductService {
 
         if (this.orderlineRepository.existsByProduct(product)) {
             throw new ConflictException(
-                    "Product with id " + id + " cannot be deleted because it is associated with an order.");
+                    "Product with id " + id + " cannot be deleted because it is associated with an order");
         }
 
         this.productRepository.deleteById(id);

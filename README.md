@@ -27,12 +27,12 @@ It allows managing users, their roles, products, categories, and orders.
 
 # Main Entities
 Entity      Description
-Product     Contains id, name, unitPrice, stockQuantity, list of categories
-Category    Contains id, name, list of products
+Role        Contains id and name
+User        Contains id, email, password (hashed), phone, address, and roles
+Category    Contains id, name,
+Product     Contains id, name, price, description, list of image URLs, stock available, list of categories
 Order       Contains id, orderDate, user, list of OrderLine, status
 OrderLine   Links a product to an order with a quantity
-User        Contains id, email, password (hashed), phone, address, and roles
-Role        Contains id and name
 
 # Key Endpoints
 
@@ -50,14 +50,14 @@ Endpoint                    Method      Description
 /users/{id}                 DELETE  Delete user (only allower if there are no orders associated)
 
 /products                   GET     List all products
-/product                    POST    Create a product
-/product/{id}               PUT     Update a product
-/product/{id}               DELETE  Delete a product
+/products                   POST    Create a product
+/products/{id}              PUT     Update a product
+/products/{id}              DELETE  Delete a product
 
 /categories                 GET     List all categories
-/categorie                  POST    Create a category
-/categorie/{id}             PUT     Update a category
-/categorie/{id}             DELETE  Delete a category
+/categories                 POST    Create a category
+/categories/{id}            PUT     Update a category
+/categories/{id}            DELETE  Delete a category
 
 /order                      POST    Create an order
 /order/{id}                 GET     Get an order by ID
