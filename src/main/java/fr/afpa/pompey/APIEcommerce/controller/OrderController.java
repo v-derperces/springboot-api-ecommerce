@@ -1,11 +1,18 @@
 package fr.afpa.pompey.APIEcommerce.controller;
 
+import java.util.Optional;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import fr.afpa.pompey.APIEcommerce.model.Order;
 import fr.afpa.pompey.APIEcommerce.service.OrderService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @RestController
 public class OrderController {
@@ -43,8 +50,8 @@ public class OrderController {
                 existing.setUser(order.getUser());
             }
             existing.setStatus(order.getStatus());
-            existing.setOrderlines(order.getOrderlines());
-            existing.setOrderDate(order.getOrderDate());
+            existing.setItems(null);
+            existing.setCreatedAt(null);
             return orderService.saveOrder(existing);
         }
         return null;

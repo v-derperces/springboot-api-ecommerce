@@ -10,7 +10,7 @@ import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.mapper.ProductMapper;
 import fr.afpa.pompey.APIEcommerce.model.Product;
-import fr.afpa.pompey.APIEcommerce.repository.OrderlineRepository;
+import fr.afpa.pompey.APIEcommerce.repository.OrderItemRepository;
 import fr.afpa.pompey.APIEcommerce.repository.ProductRepository;
 import fr.afpa.pompey.APIEcommerce.util.SkuGenerator;
 
@@ -23,8 +23,8 @@ public class ProductService {
     /** Repository used to access product data storage. */
     private final ProductRepository productRepository;
 
-    /** Repository used to check orderline dependencies. */
-    private final OrderlineRepository orderlineRepository;
+    /** Repository used to check order item dependencies. */
+    private final OrderItemRepository orderItemRepository;
 
     /** Service used to validate categories. */
     private final CategoryService categoryService;
@@ -33,11 +33,11 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     public ProductService(final ProductRepository productRepository,
-            final OrderlineRepository orderlineRepository,
+            final OrderItemRepository orderItemRepository,
             final CategoryService categoryService,
             final ProductMapper productMapper) {
         this.productRepository = productRepository;
-        this.orderlineRepository = orderlineRepository;
+        this.orderItemRepository = orderItemRepository;
         this.categoryService = categoryService;
         this.productMapper = productMapper;
     }
@@ -106,7 +106,7 @@ public class ProductService {
         final Product product = this.productRepository.findById(id).orElseThrow(
                 () -> new NotFoundException("Cannot delete product: No product found with id: " + id));
 
-        if (this.orderlineRepository.existsByProduct(product)) {
+        if (this.orderItemRepository.existsByProduct(product)) {
             throw new ConflictException(
                     "Product with id " + id + " cannot be deleted because it is associated with an order");
         }

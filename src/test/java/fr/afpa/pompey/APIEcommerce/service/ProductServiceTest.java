@@ -24,7 +24,7 @@ import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.mapper.ProductMapper;
 import fr.afpa.pompey.APIEcommerce.model.Category;
 import fr.afpa.pompey.APIEcommerce.model.Product;
-import fr.afpa.pompey.APIEcommerce.repository.OrderlineRepository;
+import fr.afpa.pompey.APIEcommerce.repository.OrderItemRepository;
 import fr.afpa.pompey.APIEcommerce.repository.ProductRepository;
 
 class ProductServiceTest {
@@ -33,7 +33,7 @@ class ProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private OrderlineRepository orderlineRepository;
+    private OrderItemRepository orderItemRepository;
 
     @Mock
     private CategoryService categoryService;
@@ -121,13 +121,13 @@ class ProductServiceTest {
     }
 
     @Test
-    void deleteProductWithOrderlineShouldThrowConflictException() {
+    void deleteProductWithOrderItemShouldThrowConflictException() {
         long productId = 10L;
         Product product = new Product();
         product.setProductId(productId);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(orderlineRepository.existsByProduct(product)).thenReturn(true);
+        when(orderItemRepository.existsByProduct(product)).thenReturn(true);
 
         ConflictException exception = assertThrows(
                 ConflictException.class,
@@ -135,6 +135,6 @@ class ProductServiceTest {
 
         assertEquals("Product with id " + productId + " cannot be deleted because it is associated with an order",
                 exception.getMessage());
-        verify(orderlineRepository, times(1)).existsByProduct(product);
+        verify(orderItemRepository, times(1)).existsByProduct(product);
     }
 }
