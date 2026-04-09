@@ -1,6 +1,7 @@
 package fr.afpa.pompey.APIEcommerce.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import fr.afpa.pompey.APIEcommerce.dto.order.OrderResponse;
 import fr.afpa.pompey.APIEcommerce.model.Order;
@@ -8,7 +9,7 @@ import fr.afpa.pompey.APIEcommerce.model.Order;
 /**
  * Mapper interface for converting between Order entities and DTOs.
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {UserMapper.class})
 public interface OrderMapper {
 
     /**
@@ -17,5 +18,6 @@ public interface OrderMapper {
      * @param order the DTO to convert
      * @return the corresponding entity
      */
+    @Mapping(target = "userResponse", source = "user")
     OrderResponse toDTO(Order order);
 }

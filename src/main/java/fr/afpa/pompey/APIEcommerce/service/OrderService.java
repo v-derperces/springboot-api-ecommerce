@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,7 @@ public class OrderService {
                 order.setUser(user);
                 order.setStatus(OrderStatus.CREATED);
                 order.setPaymentStatus(PaymentStatus.PENDING);
+                order.setPaymentMethod(request.getPaymentMethod());
                 order.setShippingAddress(addressMapper.toEntity(request.getShippingAddress()));
                 order.setBillingAddress(addressMapper.toEntity(request.getBillingAddress()));
                 order.setReference(generateOrderReference());
@@ -133,7 +135,6 @@ public class OrderService {
                     }
 
                     product.setStock(product.getStock() - quantity);
-                    productRepository.save(product);
 
                     OrderItem item = new OrderItem();
                     item.setProduct(product);
@@ -143,7 +144,7 @@ public class OrderService {
                     item.setQuantity(quantity);
                     item.setOrder(order);
                     return item;
-                }).toList();
+                }).collect(Collectors.toList());
 
                 order.setItems(items);
                 order.setTotalAmount(order.calculateTotalAmount());
