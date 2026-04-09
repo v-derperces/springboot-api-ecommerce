@@ -22,8 +22,10 @@ import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemRequest;
 import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.enums.OrderStatus;
+import fr.afpa.pompey.APIEcommerce.enums.PaymentMethod;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
 import fr.afpa.pompey.APIEcommerce.exceptions.InsufficientStockException;
+import fr.afpa.pompey.APIEcommerce.exceptions.InvalidOrderStatusException;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.exceptions.ProductUnavailableException;
 import fr.afpa.pompey.APIEcommerce.mapper.AddressMapper;
@@ -191,4 +193,65 @@ public class OrderServiceTest {
 
         assertThrows(InsufficientStockException.class, () -> orderService.createOrder(request, "user@example.com"));
     }
+
+    @Test
+    void payOrderShouldUpdateStatusAndSetPaidAt() {
+        User user = new User();
+        user.setEmail("user@example.com");
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setStatus(OrderStatus.CREATED);
+        order.setUser(user);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderResponse paidResponse = new OrderResponse();
+        paidResponse.setOrderId(1L);
+        paidResponse.setStatus("PAID");
+        paidResponse.setPaymentStatus(PaymentStatus.PAID);
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(paidResponse);
+
+        OrderResponse result = orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com");
+
+        assertEquals("PAID", result.getStatus());
+        assertEquals(PaymentStatus.PAID, result.getPaymentStatus());
+        verify(orderRepository).save(order);
+        assertNotNull(order.getPaidAt());
+        assertEquals(PaymentMethod.CREDIT_CARD, order.getPaymentMethod());
+    }
+
+    @Test
+    void payOrderNotInCreatedStatusShouldThrowConflictException() {
+        User user = new User();
+        user.setEmail("user@example.com");
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setStatus(OrderStatus.PAID);
+        order.setUser(user);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStatusException.class,
+                () -> orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com"));
+    }
+
+    @Test
+    void payOrderNotBelongingToUserShouldThrowNotFoundException() {
+        User user = new User();
+        user.setEmail("other@example.com");
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setStatus(OrderStatus.CREATED);
+        order.setUser(user);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(NotFoundException.class,
+                () -> orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com"));
+    }
+    
 }

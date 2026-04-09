@@ -2,7 +2,9 @@ package fr.afpa.pompey.APIEcommerce.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -15,8 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import fr.afpa.pompey.APIEcommerce.dto.order.OrderRequest;
 import fr.afpa.pompey.APIEcommerce.dto.order.OrderResponse;
 import fr.afpa.pompey.APIEcommerce.enums.OrderStatus;
+import fr.afpa.pompey.APIEcommerce.enums.PaymentMethod;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
+import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
 import fr.afpa.pompey.APIEcommerce.exceptions.InsufficientStockException;
+import fr.afpa.pompey.APIEcommerce.exceptions.InvalidOrderStatusException;
+import fr.afpa.pompey.APIEcommerce.exceptions.InvalidPaymentMethod;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.exceptions.OrderCreationException;
 import fr.afpa.pompey.APIEcommerce.exceptions.ProductUnavailableException;
@@ -35,6 +41,11 @@ import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
  */
 @Service
 public class OrderService {
+
+    private static final Set<PaymentMethod> ALLOWED_METHODS = EnumSet.of(
+            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYPAL,
+            PaymentMethod.BANK_TRANSFER);
 
     /** Repository used to manage {@link Order} persistence operations. */
     private final OrderRepository orderRepository;
@@ -162,6 +173,59 @@ public class OrderService {
             }
         }
         throw new OrderCreationException("Unexpected error creating order. Please contact support.");
+    }
+
+    /**
+     * Processes payment for an existing order.
+     * <p>
+     * This method validates that the order exists, belongs to the authenticated
+     * user,
+     * and is in CREATED status before processing the payment. Upon successful
+     * payment,
+     * the order status is updated to PAID, payment status to PAID, and paidAt
+     * timestampis set.
+     *
+     * @param orderId       the ID of the order to pay for
+     * @param paymentMethod the payment method used (e.g., CREDIT_CARD, PAYPAL)
+     * @param username      the email of the authenticated user
+     * @return the updated order as {@link OrderResponse}
+     *
+     * @throws NotFoundException if the order does not exist or does not belong to
+     *                           the user
+     * @throws ConflictException if the order is not in CREATED status
+     */
+    @Transactional
+    public OrderResponse payOrder(Long orderId, PaymentMethod paymentMethod, String username) {
+        if (!ALLOWED_METHODS.contains(paymentMethod)) {
+            throw new InvalidPaymentMethod("Payment method '" + paymentMethod + "' is not allowed");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Payment aborted. Order not found: " + orderId));
+
+        if (!order.getUser().getEmail().equals(username)) {
+            LOGGER.warn("User {} attempted to pay for order {} which belongs to another user", username, orderId);
+            throw new NotFoundException("Order not found: " + orderId);
+        }
+
+        if (order.getStatus() != OrderStatus.CREATED) {
+            LOGGER.warn("Cannot pay for order {} in status {}", orderId, order.getStatus());
+            throw new InvalidOrderStatusException(
+                    "Order cannot be paid because it is " + order.getStatus().toString().toLowerCase());
+        }
+
+        // TODO: integrate real payment gateway here
+        // Currently marking order as paid directly for demo/simulation purposes
+        order.setPaymentMethod(paymentMethod);
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setStatus(OrderStatus.PAID);
+        order.setPaidAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+
+        Order paidOrder = orderRepository.save(order);
+        LOGGER.info("Successfully processed payment for order {}", orderId);
+
+        return orderMapper.toDTO(paidOrder);
     }
 
     /**

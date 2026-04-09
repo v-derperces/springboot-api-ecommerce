@@ -49,4 +49,10 @@ public class OrderResponse {
 
     /** Date and time when the order was created. */
     private LocalDateTime createdAt;
+
+    /** Date and time when the order was updated */
+    private LocalDateTime updatedAt;
+
+    /** Date and time when the order was paid. */
+    private LocalDateTime paidAt;
 }

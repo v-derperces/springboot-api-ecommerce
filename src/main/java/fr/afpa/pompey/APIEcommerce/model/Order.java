@@ -102,6 +102,10 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /** Timestamp when the order was paid. */
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
     /**
      * Adds an item to the order and sets the order reference in the item.
      *
