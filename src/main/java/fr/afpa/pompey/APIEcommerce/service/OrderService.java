@@ -22,7 +22,7 @@ import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
 import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
 import fr.afpa.pompey.APIEcommerce.exceptions.InsufficientStockException;
 import fr.afpa.pompey.APIEcommerce.exceptions.InvalidOrderStatusException;
-import fr.afpa.pompey.APIEcommerce.exceptions.InvalidPaymentMethod;
+import fr.afpa.pompey.APIEcommerce.exceptions.InvalidPaymentMethodException;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
 import fr.afpa.pompey.APIEcommerce.exceptions.OrderCreationException;
 import fr.afpa.pompey.APIEcommerce.exceptions.ProductUnavailableException;
@@ -197,7 +197,7 @@ public class OrderService {
     @Transactional
     public OrderResponse payOrder(Long orderId, PaymentMethod paymentMethod, String username) {
         if (!ALLOWED_METHODS.contains(paymentMethod)) {
-            throw new InvalidPaymentMethod("Payment method '" + paymentMethod + "' is not allowed");
+            throw new InvalidPaymentMethodException("Payment method '" + paymentMethod + "' is not allowed");
         }
 
         Order order = orderRepository.findById(orderId)

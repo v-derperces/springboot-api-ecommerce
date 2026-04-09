@@ -7,6 +7,7 @@ import java.util.List;
 import fr.afpa.pompey.APIEcommerce.dto.address.AddressResponse;
 import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
+import fr.afpa.pompey.APIEcommerce.enums.OrderStatus;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentMethod;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
 import lombok.Data;
@@ -30,7 +31,7 @@ public class OrderResponse {
     private BigDecimal totalAmount;
 
     /** Status of the order. */
-    private String status;
+    private OrderStatus status;
 
     /** Payment status of the order. */
     private PaymentStatus paymentStatus;

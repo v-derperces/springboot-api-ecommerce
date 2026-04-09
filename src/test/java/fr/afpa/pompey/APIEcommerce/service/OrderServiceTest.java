@@ -209,13 +209,13 @@ public class OrderServiceTest {
 
         OrderResponse paidResponse = new OrderResponse();
         paidResponse.setOrderId(1L);
-        paidResponse.setStatus("PAID");
+        paidResponse.setStatus(OrderStatus.PAID);
         paidResponse.setPaymentStatus(PaymentStatus.PAID);
         when(orderMapper.toDTO(any(Order.class))).thenReturn(paidResponse);
 
         OrderResponse result = orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com");
 
-        assertEquals("PAID", result.getStatus());
+        assertEquals(OrderStatus.PAID, result.getStatus());
         assertEquals(PaymentStatus.PAID, result.getPaymentStatus());
         verify(orderRepository).save(order);
         assertNotNull(order.getPaidAt());
@@ -253,5 +253,5 @@ public class OrderServiceTest {
         assertThrows(NotFoundException.class,
                 () -> orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com"));
     }
-    
+
 }

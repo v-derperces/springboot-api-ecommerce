@@ -25,11 +25,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.afpa.pompey.APIEcommerce.dto.address.AddressRequest;
 import fr.afpa.pompey.APIEcommerce.dto.address.AddressResponse;
+import fr.afpa.pompey.APIEcommerce.dto.order.OrderPaymentRequest;
 import fr.afpa.pompey.APIEcommerce.dto.order.OrderRequest;
 import fr.afpa.pompey.APIEcommerce.dto.order.OrderResponse;
 import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemRequest;
 import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemResponse;
 import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
+import fr.afpa.pompey.APIEcommerce.enums.OrderStatus;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentMethod;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
@@ -140,6 +142,67 @@ class OrderControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void payOrderShouldReturn200() throws Exception {
+        OrderPaymentRequest paymentRequest = new OrderPaymentRequest();
+        paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+
+        OrderResponse paidResponse = new OrderResponse();
+        paidResponse.setOrderId(1L);
+        paidResponse.setStatus(OrderStatus.PAID);
+        paidResponse.setPaymentStatus(PaymentStatus.PAID);
+        paidResponse.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+
+        when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
+                .thenReturn(paidResponse);
+
+        mockMvc.perform(post("/orders/1/pay")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.paymentStatus").value("PAID"));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void payOrderWithoutPaymentMethodShouldReturn400() throws Exception {
+        var payload = new java.util.HashMap<String, Object>();
+
+        mockMvc.perform(post("/orders/1/pay")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void payOrderNotFoundShouldReturn404() throws Exception {
+        OrderPaymentRequest paymentRequest = new OrderPaymentRequest();
+        paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+
+        when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
+                .thenThrow(new NotFoundException("Order not found"));
+
+        mockMvc.perform(post("/orders/999/pay")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void payOrderWithoutAuthenticationShouldReturn401() throws Exception {
+        OrderPaymentRequest paymentRequest = new OrderPaymentRequest();
+        paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+
+        mockMvc.perform(post("/orders/1/pay")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isUnauthorized());
+    }
+
     private OrderRequest buildOrderRequest() {
         OrderRequest request = new OrderRequest();
         request.setItems(List.of(buildOrderItemRequest()));
@@ -179,7 +242,7 @@ class OrderControllerTest {
         response.setOrderId(orderId);
         response.setReference(reference);
         response.setTotalAmount(new BigDecimal("299.98"));
-        response.setStatus("CREATED");
+        response.setStatus(OrderStatus.CREATED);
         response.setPaymentStatus(PaymentStatus.PENDING);
         response.setPaymentMethod(PaymentMethod.CREDIT_CARD);
         response.setBillingAddress(buildAddressResponse());
