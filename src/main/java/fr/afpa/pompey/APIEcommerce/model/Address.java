@@ -4,11 +4,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 /**
  * Represents an address associated with a user or an order.
  * This class is embedded within the User and Order entities to store address information.
  */
+@Data
 @Embeddable
 public class Address {
 

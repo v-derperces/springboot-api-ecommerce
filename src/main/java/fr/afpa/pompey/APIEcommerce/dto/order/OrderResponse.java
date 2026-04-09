@@ -6,6 +6,7 @@ import java.util.List;
 
 import fr.afpa.pompey.APIEcommerce.dto.address.AddressResponse;
 import fr.afpa.pompey.APIEcommerce.dto.orderItem.OrderItemResponse;
+import fr.afpa.pompey.APIEcommerce.dto.user.UserResponse;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentMethod;
 import fr.afpa.pompey.APIEcommerce.enums.PaymentStatus;
 import lombok.Data;
@@ -18,6 +19,9 @@ public class OrderResponse {
 
     /** Unique identifier of the order. */
     private Long orderId;
+
+    /** User associated to the order.  */
+    private UserResponse userResponse;
 
     /** Reference code for the order. */
     private String reference;

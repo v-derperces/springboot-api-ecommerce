@@ -2,6 +2,7 @@ package fr.afpa.pompey.APIEcommerce.mapper;
 
 import org.mapstruct.Mapper;
 
+import fr.afpa.pompey.APIEcommerce.dto.address.AddressRequest;
 import fr.afpa.pompey.APIEcommerce.dto.address.AddressResponse;
 import fr.afpa.pompey.APIEcommerce.model.Address;
 
@@ -13,4 +14,6 @@ public interface AddressMapper {
 
     /** Convert an Address entity to a DTO. */
     AddressResponse toDTO(Address address);
+
+    Address toEntity(AddressRequest addressRequest);
 }

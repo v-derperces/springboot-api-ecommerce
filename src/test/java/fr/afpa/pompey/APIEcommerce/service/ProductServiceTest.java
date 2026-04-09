@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,7 +86,7 @@ class ProductServiceTest {
     void createProductShouldSaveAndReturnResponse() {
         ProductRequest request = new ProductRequest();
         request.setName("Widget");
-        request.setPrice(9.99);
+        request.setPrice(new BigDecimal("9.99"));
         request.setStock(10);
         request.setCategoryIds(List.of(1L));
 
@@ -95,7 +96,7 @@ class ProductServiceTest {
         Product savedProduct = new Product();
         savedProduct.setProductId(1L);
         savedProduct.setName("Widget");
-        savedProduct.setPrice(9.99);
+        savedProduct.setPrice(new BigDecimal("9.99"));
         savedProduct.setStock(10);
         savedProduct.setCategories(List.of(new Category()));
 

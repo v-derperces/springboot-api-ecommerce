@@ -29,5 +29,6 @@ public interface ProductMapper {
      */
     @Mapping(target = "productId", ignore = true)
     @Mapping(target = "categories", ignore = true)
+    @Mapping(target = "sku", ignore = true)
     Product toEntity(ProductRequest productRequest);
 }

@@ -8,11 +8,47 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import fr.afpa.pompey.APIEcommerce.exceptions.AuthException;
 import fr.afpa.pompey.APIEcommerce.exceptions.ConflictException;
+import fr.afpa.pompey.APIEcommerce.exceptions.InsufficientStockException;
 import fr.afpa.pompey.APIEcommerce.exceptions.NotFoundException;
+import fr.afpa.pompey.APIEcommerce.exceptions.OrderCreationException;
+import fr.afpa.pompey.APIEcommerce.exceptions.ProductUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(OrderCreationException.class)
+    public ResponseEntity<ErrorResponse> handleOrderCreationException(OrderCreationException ex,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ProductUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleProductUnavailableException(ProductUnavailableException ex,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientStockException(InsufficientStockException ex,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        HttpStatus.CONFLICT.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()));
+    }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex, HttpServletRequest request) {

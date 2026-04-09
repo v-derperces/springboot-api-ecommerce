@@ -1,5 +1,6 @@
 package fr.afpa.pompey.APIEcommerce.model;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -53,9 +55,10 @@ public class Product {
     private String description;
 
     /** Unit price of the product. */
-    @Column(name = "price", nullable = false)
-    @PositiveOrZero(message = "The price cannot be negative.")
-    private double price = 0.0;
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    @NotNull(message = "Price must be provided")
+    @DecimalMin(value = "0.0", message = "Price cannot be negative")
+    private BigDecimal price;
 
     /** Quantity available in stock. */
     @Column(name = "stock", nullable = false)

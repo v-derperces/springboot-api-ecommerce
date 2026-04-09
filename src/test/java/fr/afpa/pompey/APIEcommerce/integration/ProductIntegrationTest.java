@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +57,7 @@ class ProductIntegrationTest {
         Category category = buildCategory("Gadgets");
         categoryRepository.save(category);
 
-        Product product = buildProduct("Widget", 9.99, 5, category);
+        Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
         productRepository.save(product);
 
         mockMvc.perform(get("/products"))
@@ -72,8 +73,8 @@ class ProductIntegrationTest {
 
         var payload = new java.util.HashMap<String, Object>();
         payload.put("name", "Widget");
-        payload.put("unitPrice", 9.99);
-        payload.put("stockQuantity", 5);
+        payload.put("price", new BigDecimal("9.99"));
+        payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
         mockMvc.perform(post("/products")
@@ -92,8 +93,8 @@ class ProductIntegrationTest {
 
         var payload = new java.util.HashMap<String, Object>();
         payload.put("name", "");
-        payload.put("unitPrice", 9.99);
-        payload.put("stockQuantity", 5);
+        payload.put("price", new BigDecimal("9.99"));
+        payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
         mockMvc.perform(post("/products")
@@ -108,7 +109,7 @@ class ProductIntegrationTest {
         Category category = buildCategory("Gadgets");
         categoryRepository.save(category);
 
-        Product product = buildProduct("Widget", 9.99, 5, category);
+        Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
         Product saved = productRepository.save(product);
 
         mockMvc.perform(delete("/products/" + saved.getProductId()))
@@ -123,7 +124,7 @@ class ProductIntegrationTest {
         return category;
     }
 
-    private Product buildProduct(String name, double price, int stock, Category category) {
+    private Product buildProduct(String name, BigDecimal price, int stock, Category category) {
         Product product = new Product();
         product.setName(name);
         product.setPrice(price);

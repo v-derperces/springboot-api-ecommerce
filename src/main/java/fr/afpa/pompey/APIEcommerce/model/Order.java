@@ -52,7 +52,7 @@ public class Order {
     /** Total amount for the order. */
     @Column(name = "total_amount", nullable = false)
     @NotNull(message = "Total amount must be provided")
-    @DecimalMin("0.0")
+    @DecimalMin(value = "0.0", message = "Total amount cannot be negative")
     private BigDecimal totalAmount;
 
     /** Payment method used for the order (e.g., CREDIT_CARD, PAYPAL) */

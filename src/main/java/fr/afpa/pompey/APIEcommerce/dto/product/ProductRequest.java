@@ -1,9 +1,11 @@
 package fr.afpa.pompey.APIEcommerce.dto.product;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.hibernate.validator.constraints.URL;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -26,8 +28,9 @@ public class ProductRequest {
     private String description;
 
     /** Unit price of the product. */
-    @PositiveOrZero(message = "The price cannot be negative.")
-    private double price;
+     @NotNull(message = "Price must be provided")
+    @DecimalMin(value = "0.0", message = "Price cannot be negative")
+    private BigDecimal price;
 
     /** Quantity available in stock. */
     @PositiveOrZero(message = "The stock cannot be negative.")

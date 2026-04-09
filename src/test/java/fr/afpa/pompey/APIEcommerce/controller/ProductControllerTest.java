@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -50,7 +52,7 @@ class ProductControllerTest {
     void createProductAsAdminShouldReturn201() throws Exception {
         ProductRequest request = new ProductRequest();
         request.setName("Widget");
-        request.setPrice(9.99);
+        request.setPrice(new BigDecimal("9.99"));
         request.setStock(5);
         request.setCategoryIds(java.util.List.of(1L));
 
@@ -73,7 +75,7 @@ class ProductControllerTest {
     void createProductAsUserShouldReturn403() throws Exception {
         ProductRequest request = new ProductRequest();
         request.setName("Widget");
-        request.setPrice(9.99);
+        request.setPrice(new BigDecimal("9.99"));
         request.setStock(5);
         request.setCategoryIds(java.util.List.of(1L));
 
@@ -88,7 +90,7 @@ class ProductControllerTest {
     void updateProductAsAdminShouldReturn200() throws Exception {
         ProductRequest request = new ProductRequest();
         request.setName("Updated Widget");
-        request.setPrice(12.50);
+        request.setPrice(new BigDecimal("9.99"));
         request.setStock(7);
         request.setCategoryIds(java.util.List.of(1L));
 

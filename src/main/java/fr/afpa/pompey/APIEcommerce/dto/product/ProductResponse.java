@@ -1,5 +1,6 @@
 package fr.afpa.pompey.APIEcommerce.dto.product;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import fr.afpa.pompey.APIEcommerce.dto.category.CategoryResponse;
@@ -21,7 +22,7 @@ public class ProductResponse {
     private String description;
 
     /** Unit price of the product. */
-    private double price;
+    private BigDecimal price;
 
     /** Quantity available in stock. */
     private int stock;
