@@ -38,7 +38,7 @@ import fr.afpa.pompey.APIEcommerce.repository.OrderRepository;
 import fr.afpa.pompey.APIEcommerce.repository.ProductRepository;
 import fr.afpa.pompey.APIEcommerce.repository.UserRepository;
 
-public class OrderServiceTest {
+class OrderServiceTest {
 
     private OrderRepository orderRepository;
     private UserRepository userRepository;
@@ -252,6 +252,56 @@ public class OrderServiceTest {
 
         assertThrows(NotFoundException.class,
                 () -> orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com"));
+    }
+
+    @Test
+    void cancelOrderShouldRestoreStockAndReturnCancelledResponse() {
+        User user = new User();
+        user.setEmail("user@example.com");
+
+        Product product = new Product();
+        product.setProductId(1L);
+        product.setName("Test Product");
+        product.setStock(5);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+        OrderItem item = new OrderItem();
+        item.setProduct(product);
+        item.setQuantity(2);
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setStatus(OrderStatus.CREATED);
+        order.setUser(user);
+        order.setItems(List.of(item));
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderResponse canceledResponse = new OrderResponse();
+        canceledResponse.setOrderId(1L);
+        canceledResponse.setStatus(OrderStatus.CANCELLED);
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(canceledResponse);
+
+        OrderResponse result = orderService.cancelOrder(1L, "user@example.com");
+
+        assertEquals(OrderStatus.CANCELLED, result.getStatus());
+        assertEquals(7, product.getStock());
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void cancelOrderInFinalStateShouldThrowInvalidOrderStatusException() {
+        User user = new User();
+        user.setEmail("user@example.com");
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setUser(user);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStatusException.class, () -> orderService.cancelOrder(1L, "user@example.com"));
     }
 
 }

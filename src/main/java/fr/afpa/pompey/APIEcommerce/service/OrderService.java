@@ -229,6 +229,47 @@ public class OrderService {
     }
 
     /**
+     * Cancels an existing order and restores stock for its items.
+     * <p>
+     * The order can only be cancelled if it is not in a final state
+     * (DELIVERED or CANCELLED) and belongs to the authenticated user.
+     *
+     * @param orderId  the id of the order to cancel
+     * @param username the email of the authenticated user
+     * @return the cancelled order as {@link OrderResponse}
+     */
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId, String username) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+
+        if (!order.getUser().getEmail().equals(username)) {
+            throw new NotFoundException("Order not found: " + orderId);
+        }
+
+        if (!order.isCancellable()) {
+            throw new InvalidOrderStatusException(
+                    "Order cannot be cancelled because it is " + order.getStatus().toString().toLowerCase());
+        }
+
+        if (order.getStatus() == OrderStatus.PAID) {
+            // TODO: call payment provider to process refund
+            order.setPaymentStatus(PaymentStatus.REFUNDED);
+        }
+
+        order.getItems().forEach(item -> {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+        });
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        Order cancelledOrder = orderRepository.save(order);
+        return orderMapper.toDTO(cancelledOrder);
+    }
+
+    /**
      * Generates a unique order reference.
      * <p>
      * Format: {@code ORD-YYYYMM-XXXXXXXX}

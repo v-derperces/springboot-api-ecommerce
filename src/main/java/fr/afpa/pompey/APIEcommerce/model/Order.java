@@ -138,4 +138,13 @@ public class Order {
         return status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED;
     }
 
+    /**
+     * Checks if the order is in a state where it can still be cancelled by user (CREATED or PAID).
+     *
+     * @return true if the order can be cancelled, false otherwise
+     */
+    public boolean isCancellable() {
+        return status == OrderStatus.CREATED || status == OrderStatus.PAID;
+    }
+
 }
