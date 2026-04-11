@@ -3,6 +3,7 @@ package com.vderperces.ecommerce.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,6 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -199,6 +203,37 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/v1/orders/1/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void cancelOrderShouldReturn200() throws Exception {
+        OrderResponse response = buildOrderResponse(1L, "ORD-202604-ABCDEFGH", "test@example.com");
+        response.setStatus(OrderStatus.CANCELLED);
+
+        when(orderService.cancelOrder(any(Long.class), anyString())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/orders/1/cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.reference").value("ORD-202604-ABCDEFGH"))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void cancelOrderNotFoundShouldReturn404() throws Exception {
+        when(orderService.cancelOrder(any(Long.class), anyString()))
+                .thenThrow(new NotFoundException("Order not found"));
+
+        mockMvc.perform(post("/api/v1/orders/999/cancel"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelOrderWithoutAuthenticationShouldReturn401() throws Exception {
+        mockMvc.perform(post("/api/v1/orders/1/cancel"))
                 .andExpect(status().isUnauthorized());
     }
 

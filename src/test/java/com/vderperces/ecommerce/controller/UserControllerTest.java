@@ -42,7 +42,7 @@ class UserControllerTest {
         dto.setCurrentPassword("oldpass");
         dto.setNewPassword("newpass");
 
-        mockMvc.perform(put("/api/v1/users/me/password")
+        mockMvc.perform(put("/api/v1/users/password")
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isUnauthorized());
@@ -58,7 +58,7 @@ class UserControllerTest {
         doThrow(new AuthException("Current password incorrect", HttpStatus.BAD_REQUEST))
                 .when(userService).changePassword(any(String.class), any(ChangePasswordRequest.class));
 
-        mockMvc.perform(put("/api/v1/users/me/password")
+        mockMvc.perform(put("/api/v1/users/password")
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -75,7 +75,7 @@ class UserControllerTest {
         // Simulate successful change
         doNothing().when(userService).changePassword(any(String.class), any(ChangePasswordRequest.class));
 
-        mockMvc.perform(put("/api/v1/users/me/password")
+        mockMvc.perform(put("/api/v1/users/password")
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNoContent());

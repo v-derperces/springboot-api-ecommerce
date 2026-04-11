@@ -2,6 +2,7 @@ package com.vderperces.ecommerce.integration;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -284,6 +285,76 @@ class OrderIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void cancelOrderShouldUpdateStatusCancelledAndRestoreStock() throws Exception {
+        Map<String, Object> createPayload = new HashMap<>();
+        createPayload.put("paymentMethod", "CREDIT_CARD");
+        createPayload.put("shippingAddress", buildAddressMap());
+        createPayload.put("billingAddress", buildAddressMap());
+        createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 3)));
+
+        String response = mockMvc.perform(post("/api/v1/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createPayload)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        Product productAfterCreate = productRepository.findById(testProduct.getProductId()).orElseThrow();
+        assertEquals(7, productAfterCreate.getStock());
+
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/cancel")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        Product productAfterCancel = productRepository.findById(testProduct.getProductId()).orElseThrow();
+        assertEquals(10, productAfterCancel.getStock());
+
+        Order cancelledOrder = orderRepository.findById(orderId).orElseThrow();
+        assertEquals("CANCELLED", cancelledOrder.getStatus().toString());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void cancelOrderAfterPaymentShouldSetPaymentStatusRefunded() throws Exception {
+        Map<String, Object> createPayload = new HashMap<>();
+        createPayload.put("paymentMethod", "CREDIT_CARD");
+        createPayload.put("shippingAddress", buildAddressMap());
+        createPayload.put("billingAddress", buildAddressMap());
+        createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
+
+        String response = mockMvc.perform(post("/api/v1/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createPayload)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paymentStatus").value("PAID"));
+
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/cancel")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.paymentStatus").value("REFUNDED"));
+
+        Order cancelledOrder = orderRepository.findById(orderId).orElseThrow();
+        assertEquals("CANCELLED", cancelledOrder.getStatus().toString());
+        assertEquals("REFUNDED", cancelledOrder.getPaymentStatus().toString());
     }
 
     private Map<String, Object> buildAddressMap() {

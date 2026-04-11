@@ -1,8 +1,12 @@
 package com.vderperces.ecommerce.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +23,8 @@ import jakarta.validation.Valid;
 /**
  * Rest controller for order operations.
  *
- * Provides endpoints for creating, reading and updating orders.
+ * Provides endpoints for creating, reading, paying and cancelling orders.
+ * All endpoints require authentication except where explicitly stated.
  */
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -58,6 +63,22 @@ public class OrderController {
             @Valid @RequestBody OrderPaymentRequest request,
             final Authentication authentication) {
         return ResponseEntity.ok(orderService.payOrder(orderId, request.getPaymentMethod(), authentication.getName()));
+    }
+
+    /**
+     * Cancels an existing order and restores stock for its items.
+     *
+     * The order can only be cancelled if it is not in a final state
+     * (DELIVERED or CANCELLED) and belongs to the authenticated user.
+     *
+     * @param orderId        the ID of the order to cancel
+     * @param authentication the authenticated user
+     * @return the cancelled order details with HTTP 200
+     */
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId,
+            final Authentication authentication) {
+        return ResponseEntity.ok(orderService.cancelOrder(orderId, authentication.getName()));
     }
 
 }

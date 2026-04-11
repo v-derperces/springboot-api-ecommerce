@@ -183,7 +183,7 @@ class UserIntegrationTest {
 
         String token = result.getResponse().getContentAsString().replace("{\"token\":\"", "").replace("\"}", "");
 
-        mockMvc.perform(put("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/v1/users/password").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNoContent());
@@ -223,7 +223,7 @@ class UserIntegrationTest {
         dto.setCurrentPassword("WrongPass");
         dto.setNewPassword("NewPass123");
 
-        mockMvc.perform(put("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/v1/users/password").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())

@@ -37,7 +37,7 @@ public class UserController {
      * @param authentication principal from security context
      * @return user response with HTTP 200
      */
-    @GetMapping("/me")
+    @GetMapping
     public ResponseEntity<UserResponse> getMe(final Authentication authentication) {
         return ResponseEntity.ok(this.userService.getUserByEmail(authentication.getName()));
     }
@@ -49,7 +49,7 @@ public class UserController {
      * @param authentication    principal from security context
      * @return updated user response with HTTP 200
      */
-    @PutMapping("/me")
+    @PutMapping
     public ResponseEntity<UserResponse> updateMe(@Valid @RequestBody final UserUpdateRequest userUpdateRequest,
             final Authentication authentication) {
         return ResponseEntity.ok(this.userService.updateUser(authentication.getName(), userUpdateRequest));
@@ -62,7 +62,7 @@ public class UserController {
      * @param authentication        principal from security context
      * @return no content response with HTTP 204
      */
-    @PutMapping("/me/password")
+    @PutMapping("/password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody final ChangePasswordRequest changePasswordRequest,
             final Authentication authentication) {
         this.userService.changePassword(authentication.getName(), changePasswordRequest);
