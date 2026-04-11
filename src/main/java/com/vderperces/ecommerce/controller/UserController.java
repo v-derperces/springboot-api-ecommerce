@@ -1,19 +1,14 @@
 package com.vderperces.ecommerce.controller;
 
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.vderperces.ecommerce.dto.LoginRequest;
 import com.vderperces.ecommerce.dto.user.ChangePasswordRequest;
-import com.vderperces.ecommerce.dto.user.UserCreateRequest;
 import com.vderperces.ecommerce.dto.user.UserResponse;
 import com.vderperces.ecommerce.dto.user.UserUpdateRequest;
 import com.vderperces.ecommerce.service.UserService;
@@ -21,41 +16,19 @@ import com.vderperces.ecommerce.service.UserService;
 import jakarta.validation.Valid;
 
 /**
- * REST controller for user authentication and profile operations.
+ * REST controller for user profile operations.
  */
+@RequestMapping("/api/v1/users")
 @RestController
 public class UserController {
 
     /**
-     * Service used for user actions such as register, login and profile updates.
+     * Service used for user profile updates.
      */
     private final UserService userService;
 
     public UserController(final UserService userService) {
         this.userService = userService;
-    }
-
-    /**
-     * Register a new user.
-     *
-     * @param request user create request
-     * @return created user response with HTTP 201
-     */
-    @PostMapping("api/auth/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody final UserCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.register(request));
-    }
-
-    /**
-     * Authenticate a user and return a JWT token.
-     *
-     * @param request login request containing username/password
-     * @return map with token string and HTTP 200
-     */
-    @PostMapping("api/auth/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody final LoginRequest request) {
-        final String token = this.userService.login(request.getUsername(), request.getPassword());
-        return ResponseEntity.ok(Map.of("token", token));
     }
 
     /**

@@ -22,7 +22,7 @@ import jakarta.validation.Valid;
  * Provides endpoints for creating, reading and updating orders.
  */
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/v1/orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -57,8 +57,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> payOrder(@PathVariable Long orderId,
             @Valid @RequestBody OrderPaymentRequest request,
             final Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(orderService.payOrder(orderId, request.getPaymentMethod(), authentication.getName()));
+        return ResponseEntity.ok(orderService.payOrder(orderId, request.getPaymentMethod(), authentication.getName()));
     }
 
 }

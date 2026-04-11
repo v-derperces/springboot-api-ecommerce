@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vderperces.ecommerce.dto.category.CategoryRequest;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
  * Provides operations for creating, reading, updating, and deleting categories.
  */
 @RestController
+@RequestMapping("/api/v1")
 public class CategoryController {
 
     /** Service for category business operations. */
@@ -39,9 +41,9 @@ public class CategoryController {
      * @param request the category request payload
      * @return the created category response with HTTP 201
      */
-    @PostMapping("/categories")
+    @PostMapping("/admin/categories")
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody final CategoryRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.categoryService.createCategory(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.categoryService.createCategory(request));
     }
 
     /**
@@ -72,7 +74,7 @@ public class CategoryController {
      * @param id      the category id
      * @return updated category response with HTTP 200
      */
-    @PutMapping("/categories/{id}")
+    @PutMapping("/admin/categories/{id}")
     public ResponseEntity<CategoryResponse> updateCategory(@Valid @RequestBody final CategoryRequest request,
             @PathVariable final Long id) {
         return ResponseEntity.ok(this.categoryService.updateCategory(id, request));
@@ -84,7 +86,7 @@ public class CategoryController {
      * @param id the category id
      * @return no content response with HTTP 204
      */
-    @DeleteMapping("/categories/{id}")
+    @DeleteMapping("/admin/categories/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable final Long id) {
         this.categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();

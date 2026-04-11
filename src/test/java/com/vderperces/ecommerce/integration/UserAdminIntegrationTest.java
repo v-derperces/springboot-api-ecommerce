@@ -63,7 +63,7 @@ class UserAdminIntegrationTest {
         request.setPassword("pass1234");
         request.setRoles(List.of(userRoleId));
 
-        String responseJson = mockMvc.perform(post("/users")
+        String responseJson = mockMvc.perform(post("/api/v1/admin/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -95,7 +95,7 @@ class UserAdminIntegrationTest {
         updateRequest.setActive(false);
         updateRequest.setRoles(List.of(roleRepository.findByName("ADMIN").orElseThrow().getRoleId()));
 
-        String responseJson = mockMvc.perform(put("/users/" + created.getId())
+        String responseJson = mockMvc.perform(put("/api/v1/admin/users/" + created.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
@@ -118,7 +118,7 @@ class UserAdminIntegrationTest {
     void deleteUserAsAdminShouldRemoveUser() throws Exception {
         UserAdminResponse created = createUser("delete.user@example.com");
 
-        mockMvc.perform(delete("/users/" + created.getId()))
+        mockMvc.perform(delete("/api/v1/admin/users/" + created.getId()))
                 .andExpect(status().isNoContent());
 
         assertFalse(userRepository.findById(created.getId()).isPresent());
@@ -130,7 +130,7 @@ class UserAdminIntegrationTest {
         createUser("list.user1@example.com");
         createUser("list.user2@example.com");
 
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
@@ -145,7 +145,7 @@ class UserAdminIntegrationTest {
         request.setPassword("pass1234");
         request.setRoles(List.of(userRoleId));
 
-        String responseJson = mockMvc.perform(post("/users")
+        String responseJson = mockMvc.perform(post("/api/v1/admin/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())

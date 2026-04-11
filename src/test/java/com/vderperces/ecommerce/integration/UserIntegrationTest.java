@@ -68,7 +68,7 @@ class UserIntegrationTest {
         request.setEmail(email);
         request.setPassword(rawPassword);
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -104,7 +104,7 @@ class UserIntegrationTest {
         request.setEmail(email);
         request.setPassword("Password1");
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -131,7 +131,7 @@ class UserIntegrationTest {
         login.setUsername(email);
         login.setPassword(rawPassword);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
@@ -144,7 +144,7 @@ class UserIntegrationTest {
         login.setUsername("nonexistent@hogwarts.com");
         login.setPassword("wrongpass");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isUnauthorized())
@@ -171,7 +171,7 @@ class UserIntegrationTest {
         login.setUsername(email);
         login.setPassword(oldPassword);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
@@ -183,7 +183,7 @@ class UserIntegrationTest {
 
         String token = result.getResponse().getContentAsString().replace("{\"token\":\"", "").replace("\"}", "");
 
-        mockMvc.perform(put("/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNoContent());
@@ -211,7 +211,7 @@ class UserIntegrationTest {
         login.setUsername(email);
         login.setPassword(oldPassword);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
@@ -223,7 +223,7 @@ class UserIntegrationTest {
         dto.setCurrentPassword("WrongPass");
         dto.setNewPassword("NewPass123");
 
-        mockMvc.perform(put("/me/password").header("Authorization", "Bearer " + token)
+        mockMvc.perform(put("/api/v1/users/me/password").header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())

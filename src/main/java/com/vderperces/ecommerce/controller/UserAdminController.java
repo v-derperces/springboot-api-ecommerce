@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vderperces.ecommerce.dto.user.UserAdminCreateRequest;
@@ -25,6 +26,7 @@ import jakarta.validation.Valid;
  * Provides endpoints to manage users with admin privileges.
  */
 @RestController
+@RequestMapping("/api/v1/admin/users")
 public class UserAdminController {
 
     /** Service for admin user operations. */
@@ -40,9 +42,9 @@ public class UserAdminController {
      * @param request user creation payload
      * @return created user admin response with HTTP 201
      */
-    @PostMapping("/users")
+    @PostMapping
     public ResponseEntity<UserAdminResponse> createUser(@Valid @RequestBody final UserAdminCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.userAdminService.createUser(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.userAdminService.createUser(request));
     }
 
     /**
@@ -51,7 +53,7 @@ public class UserAdminController {
      * @return list of user responses with additional information for admins with
      *         HTTP 200
      */
-    @GetMapping("/users")
+    @GetMapping
     public ResponseEntity<List<UserAdminResponse>> getUsers() {
         return ResponseEntity.ok(this.userAdminService.getUsers());
     }
@@ -62,7 +64,7 @@ public class UserAdminController {
      * @param id user id
      * @return user response with HTTP 200
      */
-    @GetMapping("/users/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<UserAdminResponse> getUser(@PathVariable final Long id) {
         return ResponseEntity.ok(this.userAdminService.getUser(id));
     }
@@ -74,7 +76,7 @@ public class UserAdminController {
      * @param id      user id
      * @return updated user admin response with HTTP 200
      */
-    @PutMapping("/users/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<UserAdminResponse> updateUser(@Valid @RequestBody final UserAdminUpdateRequest request,
             @PathVariable final Long id) {
         return ResponseEntity.ok(this.userAdminService.updateUser(id, request));
@@ -86,7 +88,7 @@ public class UserAdminController {
      * @param id user id
      * @return no content response with HTTP 204
      */
-    @DeleteMapping("/users/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable final Long id) {
         this.userAdminService.deleteUser(id);
         return ResponseEntity.noContent().build();

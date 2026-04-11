@@ -63,10 +63,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/me/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/orders", "/orders/*/pay").authenticated()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/users/me/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders", "/api/v1/orders/*/pay").authenticated()
                         .anyRequest().hasRole("ADMIN"))
                 .userDetailsService(userDetailService)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

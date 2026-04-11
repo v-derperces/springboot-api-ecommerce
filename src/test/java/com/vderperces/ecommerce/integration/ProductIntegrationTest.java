@@ -59,7 +59,7 @@ class ProductIntegrationTest {
         Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
         productRepository.save(product);
 
-        mockMvc.perform(get("/products"))
+        mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Widget"));
     }
@@ -76,7 +76,7 @@ class ProductIntegrationTest {
         payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
-        mockMvc.perform(post("/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isCreated())
@@ -96,7 +96,7 @@ class ProductIntegrationTest {
         payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
-        mockMvc.perform(post("/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
@@ -111,7 +111,7 @@ class ProductIntegrationTest {
         Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
         Product saved = productRepository.save(product);
 
-        mockMvc.perform(delete("/products/" + saved.getProductId()))
+        mockMvc.perform(delete("/api/v1/admin/products/" + saved.getProductId()))
                 .andExpect(status().isNoContent());
 
         assert productRepository.findById(saved.getProductId()).isEmpty();

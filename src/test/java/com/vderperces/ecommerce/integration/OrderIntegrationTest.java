@@ -113,7 +113,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isCreated())
@@ -140,7 +140,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 20)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isConflict());
@@ -160,7 +160,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isConflict());
@@ -177,7 +177,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(9999L, 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
@@ -194,7 +194,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
@@ -211,7 +211,7 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isCreated());
@@ -222,7 +222,7 @@ class OrderIntegrationTest {
         Map<String, Object> payPayload = new HashMap<>();
         payPayload.put("paymentMethod", "PAYPAL");
 
-        mockMvc.perform(post("/orders/" + orderId + "/pay")
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payPayload)))
                 .andExpect(status().isOk())
@@ -244,7 +244,7 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isCreated());
@@ -255,12 +255,12 @@ class OrderIntegrationTest {
         Map<String, Object> payPayload = new HashMap<>();
         payPayload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/orders/" + orderId + "/pay")
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payPayload)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/orders/" + orderId + "/pay")
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payPayload)))
                 .andExpect(status().isConflict());
@@ -275,12 +275,12 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isNotFound());
 
-        mockMvc.perform(post("/orders/1/pay")
+        mockMvc.perform(post("/api/v1/orders/1/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
                 .andExpect(status().isNotFound());

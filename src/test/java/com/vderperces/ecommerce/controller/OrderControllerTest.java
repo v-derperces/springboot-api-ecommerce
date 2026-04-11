@@ -62,7 +62,7 @@ class OrderControllerTest {
 
         when(orderService.createOrder(any(OrderRequest.class), anyString())).thenReturn(response);
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -85,7 +85,7 @@ class OrderControllerTest {
         payload.put("billingAddress", buildAddressRequest());
         payload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
@@ -99,7 +99,7 @@ class OrderControllerTest {
         payload.put("shippingAddress", buildAddressRequest());
         payload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
@@ -111,7 +111,7 @@ class OrderControllerTest {
         var payload = new java.util.HashMap<String, Object>();
         payload.put("items", List.of(buildOrderItemRequest()));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
@@ -125,7 +125,7 @@ class OrderControllerTest {
         when(orderService.createOrder(any(OrderRequest.class), anyString()))
                 .thenThrow(new NotFoundException("User not found"));
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -135,7 +135,7 @@ class OrderControllerTest {
     void createOrderWithoutAuthenticationShouldReturn401() throws Exception {
         OrderRequest request = buildOrderRequest();
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
@@ -156,7 +156,7 @@ class OrderControllerTest {
         when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
                 .thenReturn(paidResponse);
 
-        mockMvc.perform(post("/orders/1/pay")
+        mockMvc.perform(post("/api/v1/orders/1/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isOk())
@@ -170,7 +170,7 @@ class OrderControllerTest {
     void payOrderWithoutPaymentMethodShouldReturn400() throws Exception {
         var payload = new java.util.HashMap<String, Object>();
 
-        mockMvc.perform(post("/orders/1/pay")
+        mockMvc.perform(post("/api/v1/orders/1/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
@@ -185,7 +185,7 @@ class OrderControllerTest {
         when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
                 .thenThrow(new NotFoundException("Order not found"));
 
-        mockMvc.perform(post("/orders/999/pay")
+        mockMvc.perform(post("/api/v1/orders/999/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isNotFound());
@@ -196,7 +196,7 @@ class OrderControllerTest {
         OrderPaymentRequest paymentRequest = new OrderPaymentRequest();
         paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
 
-        mockMvc.perform(post("/orders/1/pay")
+        mockMvc.perform(post("/api/v1/orders/1/pay")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isUnauthorized());

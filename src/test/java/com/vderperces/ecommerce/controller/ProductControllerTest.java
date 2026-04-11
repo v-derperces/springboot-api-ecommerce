@@ -42,7 +42,7 @@ class ProductControllerTest {
 
     @Test
     void getProductsShouldReturn200() throws Exception {
-        mockMvc.perform(get("/products"))
+        mockMvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk());
     }
 
@@ -61,7 +61,7 @@ class ProductControllerTest {
 
         when(productService.createProduct(any(ProductRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -78,7 +78,7 @@ class ProductControllerTest {
         request.setStock(5);
         request.setCategoryIds(java.util.List.of(1L));
 
-        mockMvc.perform(post("/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -99,7 +99,7 @@ class ProductControllerTest {
 
         when(productService.updateProduct(any(Long.class), any(ProductRequest.class))).thenReturn(response);
 
-        mockMvc.perform(put("/products/1")
+        mockMvc.perform(put("/api/v1/admin/products/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -110,7 +110,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteProductAsAdminShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/products/1"))
+        mockMvc.perform(delete("/api/v1/admin/products/1"))
                 .andExpect(status().isNoContent());
     }
 }

@@ -51,7 +51,7 @@ class UserAdminControllerTest {
         createRequest.setPassword("password123");
         createRequest.setRoles(List.of(1L));
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/api/v1/admin/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isUnauthorized());
@@ -67,7 +67,7 @@ class UserAdminControllerTest {
         createRequest.setPassword("password123");
         createRequest.setRoles(List.of(1L));
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/api/v1/admin/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isForbidden());
@@ -91,7 +91,7 @@ class UserAdminControllerTest {
 
         when(userAdminService.createUser(any(UserAdminCreateRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/api/v1/admin/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isCreated())
@@ -100,14 +100,14 @@ class UserAdminControllerTest {
 
     @Test
     void getUsersUnauthenticatedShouldReturn401() throws Exception {
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(roles = "USER")
     void getUsersAsUserShouldReturn403() throws Exception {
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isForbidden());
     }
 
@@ -123,7 +123,7 @@ class UserAdminControllerTest {
 
         when(userAdminService.getUsers()).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].email").value("admin.user@example.com"));
     }
@@ -139,7 +139,7 @@ class UserAdminControllerTest {
 
         when(userAdminService.getUser(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/users/1"))
+        mockMvc.perform(get("/api/v1/admin/users/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("admin.user@example.com"));
     }
@@ -162,7 +162,7 @@ class UserAdminControllerTest {
 
         when(userAdminService.updateUser(any(Long.class), any(UserAdminUpdateRequest.class))).thenReturn(response);
 
-        mockMvc.perform(put("/users/1")
+        mockMvc.perform(put("/api/v1/admin/users/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteUserAsAdminShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/users/1"))
+        mockMvc.perform(delete("/api/v1/admin/users/1"))
                 .andExpect(status().isNoContent());
     }
 }

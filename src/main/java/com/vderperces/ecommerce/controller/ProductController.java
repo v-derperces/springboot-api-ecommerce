@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vderperces.ecommerce.dto.product.ProductRequest;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
  * Provides operations for creating, reading, updating, and deleting products.
  */
 @RestController
+@RequestMapping("/api/v1")
 public class ProductController {
 
     /** Service for product business operations. */
@@ -39,9 +41,9 @@ public class ProductController {
      * @param request the product request payload
      * @return the created product response with HTTP 201
      */
-    @PostMapping("/products")
+    @PostMapping("/admin/products")
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody final ProductRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.productService.createProduct(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.productService.createProduct(request));
     }
 
     /**
@@ -72,7 +74,7 @@ public class ProductController {
      * @param id      the product id
      * @return updated product response with HTTP 200
      */
-    @PutMapping("/products/{id}")
+    @PutMapping("/admin/products/{id}")
     public ResponseEntity<ProductResponse> updateProduct(@Valid @RequestBody final ProductRequest request,
             @PathVariable final Long id) {
         return ResponseEntity.ok(this.productService.updateProduct(id, request));
@@ -84,7 +86,7 @@ public class ProductController {
      * @param id the product id
      * @return no content response with HTTP 204
      */
-    @DeleteMapping("/products/{id}")
+    @DeleteMapping("/admin/products/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable final Long id) {
         this.productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

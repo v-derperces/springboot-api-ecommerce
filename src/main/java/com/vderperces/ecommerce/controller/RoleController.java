@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vderperces.ecommerce.dto.role.RoleRequest;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
  * Provides operations for creating, reading, updating, and deleting roles.
  */
 @RestController
+@RequestMapping("/api/v1/admin/roles")
 public class RoleController {
 
     /** Service for role business operations. */
@@ -39,9 +41,9 @@ public class RoleController {
      * @param request the role request payload
      * @return the created role response with HTTP 201
      */
-    @PostMapping("/roles")
+    @PostMapping
     public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody final RoleRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED.value()).body(this.roleService.createRole(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.roleService.createRole(request));
     }
 
     /**
@@ -49,7 +51,7 @@ public class RoleController {
      *
      * @return list of role responses with HTTP 200
      */
-    @GetMapping("/roles")
+    @GetMapping
     public ResponseEntity<List<RoleResponse>> getRoles() {
         return ResponseEntity.ok(this.roleService.getRoles());
     }
@@ -60,7 +62,7 @@ public class RoleController {
      * @param id the role id
      * @return role response with HTTP 200
      */
-    @GetMapping("/roles/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<RoleResponse> getRole(@PathVariable final Long id) {
         return ResponseEntity.ok(this.roleService.getRole(id));
     }
@@ -72,7 +74,7 @@ public class RoleController {
      * @param id      the role id
      * @return updated role response with HTTP 200
      */
-    @PutMapping("/roles/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<RoleResponse> updateRole(@Valid @RequestBody final RoleRequest request,
             @PathVariable final Long id) {
         return ResponseEntity.ok(this.roleService.updateRole(id, request));
@@ -84,7 +86,7 @@ public class RoleController {
      * @param id the role id
      * @return no content response with HTTP 204
      */
-    @DeleteMapping("/roles/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRole(@PathVariable final Long id) {
         this.roleService.deleteRole(id);
         return ResponseEntity.noContent().build();
