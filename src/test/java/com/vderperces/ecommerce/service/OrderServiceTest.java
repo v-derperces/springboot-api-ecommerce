@@ -4,18 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
 import com.vderperces.ecommerce.dto.orderitem.OrderItemRequest;
@@ -56,7 +57,8 @@ class OrderServiceTest {
         addressMapper = mock(AddressMapper.class);
         orderMapper = mock(OrderMapper.class);
 
-        orderService = new OrderService(orderRepository, userRepository, productRepository, addressMapper, orderMapper);
+        orderService = new OrderService(orderRepository, userRepository, productRepository,
+                addressMapper, orderMapper);
     }
 
     @Test
@@ -131,7 +133,8 @@ class OrderServiceTest {
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
         OrderRequest request = new OrderRequest();
 
-        assertThrows(NotFoundException.class, () -> orderService.createOrder(request, "unknown@example.com"));
+        assertThrows(NotFoundException.class,
+                () -> orderService.createOrder(request, "unknown@example.com"));
     }
 
     @Test
@@ -148,7 +151,8 @@ class OrderServiceTest {
 
         when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> orderService.createOrder(request, "user@example.com"));
+        assertThrows(NotFoundException.class,
+                () -> orderService.createOrder(request, "user@example.com"));
     }
 
     @Test
@@ -170,7 +174,8 @@ class OrderServiceTest {
         OrderRequest request = new OrderRequest();
         request.setItems(List.of(itemReq));
 
-        assertThrows(ProductUnavailableException.class, () -> orderService.createOrder(request, "user@example.com"));
+        assertThrows(ProductUnavailableException.class,
+                () -> orderService.createOrder(request, "user@example.com"));
     }
 
     @Test
@@ -191,7 +196,8 @@ class OrderServiceTest {
         OrderRequest request = new OrderRequest();
         request.setItems(List.of(itemReq));
 
-        assertThrows(InsufficientStockException.class, () -> orderService.createOrder(request, "user@example.com"));
+        assertThrows(InsufficientStockException.class,
+                () -> orderService.createOrder(request, "user@example.com"));
     }
 
     @Test
@@ -213,7 +219,8 @@ class OrderServiceTest {
         paidResponse.setPaymentStatus(PaymentStatus.PAID);
         when(orderMapper.toDTO(any(Order.class))).thenReturn(paidResponse);
 
-        OrderResponse result = orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com");
+        OrderResponse result =
+                orderService.payOrder(1L, PaymentMethod.CREDIT_CARD, "user@example.com");
 
         assertEquals(OrderStatus.PAID, result.getStatus());
         assertEquals(PaymentStatus.PAID, result.getPaymentStatus());
@@ -301,7 +308,54 @@ class OrderServiceTest {
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        assertThrows(InvalidOrderStatusException.class, () -> orderService.cancelOrder(1L, "user@example.com"));
+        assertThrows(InvalidOrderStatusException.class,
+                () -> orderService.cancelOrder(1L, "user@example.com"));
+    }
+
+    @Test
+    void getUserOrdersShouldReturnPagedResults() {
+        String email = "user@example.com";
+
+        Order order = new Order();
+        order.setOrderId(1L);
+
+        Page<Order> page = new PageImpl<>(List.of(order));
+
+        when(orderRepository.findByUser_Email(anyString(), any(Pageable.class))).thenReturn(page);
+
+        OrderResponse dto = new OrderResponse();
+        dto.setOrderId(1L);
+
+        when(orderMapper.toDTO(any(Order.class))).thenReturn(dto);
+
+        Page<OrderResponse> result = orderService.getUserOrders(email, Pageable.unpaged());
+
+        assertEquals(1, result.getContent().size());
+        assertEquals(1L, result.getContent().get(0).getOrderId());
+    }
+
+    @Test
+    void getUserOrderByIdShouldReturnOrder() {
+
+        String email = "user@example.com";
+
+        User user = new User();
+        user.setEmail(email);
+
+        Order order = new Order();
+        order.setOrderId(1L);
+        order.setUser(user);
+
+        when(orderRepository.findByOrderIdAndUser_Email(1L, email)).thenReturn(Optional.of(order));
+
+        OrderResponse dto = new OrderResponse();
+        dto.setOrderId(1L);
+
+        when(orderMapper.toDTO(order)).thenReturn(dto);
+
+        OrderResponse result = orderService.getUserOrderById(email, 1L);
+
+        assertEquals(1L, result.getOrderId());
     }
 
 }

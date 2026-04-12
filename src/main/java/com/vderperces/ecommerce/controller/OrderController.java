@@ -2,6 +2,7 @@ package com.vderperces.ecommerce.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,19 +13,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.vderperces.ecommerce.dto.order.OrderPaymentRequest;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
 import com.vderperces.ecommerce.service.OrderService;
-
 import jakarta.validation.Valid;
 
 /**
  * Rest controller for order operations.
  *
- * Provides endpoints for creating, reading, paying and cancelling orders.
- * All endpoints require authentication except where explicitly stated.
+ * Provides endpoints for creating, reading, paying and cancelling orders. All endpoints require authentication except
+ * where explicitly stated.
  */
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -39,7 +38,7 @@ public class OrderController {
     /**
      * Creates a new order for the authenticated user.
      *
-     * @param request   the order request containing items, addresses, etc.
+     * @param request the order request containing items, addresses, etc.
      * @param principal the authenticated user
      * @return the created order details
      */
@@ -53,25 +52,25 @@ public class OrderController {
     /**
      * Processes payment for an existing order.
      *
-     * @param orderId   the ID of the order to pay for
-     * @param request   the payment request containing the payment method
+     * @param orderId the ID of the order to pay for
+     * @param request the payment request containing the payment method
      * @param principal the authenticated user
      * @return the updated order details with paid status
      */
     @PostMapping("/{orderId}/pay")
     public ResponseEntity<OrderResponse> payOrder(@PathVariable Long orderId,
-            @Valid @RequestBody OrderPaymentRequest request,
-            final Authentication authentication) {
-        return ResponseEntity.ok(orderService.payOrder(orderId, request.getPaymentMethod(), authentication.getName()));
+            @Valid @RequestBody OrderPaymentRequest request, final Authentication authentication) {
+        return ResponseEntity.ok(orderService.payOrder(orderId, request.getPaymentMethod(),
+                authentication.getName()));
     }
 
     /**
      * Cancels an existing order and restores stock for its items.
      *
-     * The order can only be cancelled if it is not in a final state
-     * (DELIVERED or CANCELLED) and belongs to the authenticated user.
+     * The order can only be cancelled if it is not in a final state (DELIVERED or CANCELLED) and belongs to the
+     * authenticated user.
      *
-     * @param orderId        the ID of the order to cancel
+     * @param orderId the ID of the order to cancel
      * @param authentication the authenticated user
      * @return the cancelled order details with HTTP 200
      */
@@ -80,5 +79,33 @@ public class OrderController {
             final Authentication authentication) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId, authentication.getName()));
     }
+
+    /**
+     * Retrieves all orders for the authenticated user with pagination support.
+     *
+     * @param authentication the authenticated user
+     * @param pageable pagination and sorting parameters (default: page 0, size 20, sorted by createdAt DESC)
+     * @return a page of the user's orders with HTTP 200
+     */
+    @GetMapping
+    public ResponseEntity<Page<OrderResponse>> getUserOrders(final Authentication authentication,
+            @PageableDefault(size = 20, page = 0, sort = "createdAt",
+                    direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(orderService.getUserOrders(authentication.getName(), pageable));
+    }
+
+    /**
+     * Retrieve an order for the authenticated user.
+     *
+     * @param orderId the ID of the order to retrieve
+     * @param authentication the authenticated user
+     * @return the order detail
+     */
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getUserOrder(@PathVariable Long orderId,
+            final Authentication authentication) {
+        return ResponseEntity.ok(orderService.getUserOrderById(authentication.getName(), orderId));
+    }
+
 
 }

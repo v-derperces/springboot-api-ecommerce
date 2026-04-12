@@ -6,13 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vderperces.ecommerce.model.Category;
 import com.vderperces.ecommerce.model.Order;
@@ -114,10 +111,8 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isCreated())
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").isNumber())
                 .andExpect(jsonPath("$.reference").value(matchesPattern("ORD-\\d{6}-[A-Z0-9]{8}")))
                 .andExpect(jsonPath("$.totalAmount").value("99.98"))
@@ -129,7 +124,8 @@ class OrderIntegrationTest {
         assertEquals(1, saved.getItems().size());
         assertEquals(0, saved.getTotalAmount().compareTo(new BigDecimal("99.98")));
         assertEquals("test@example.com", saved.getUser().getEmail());
-        assertEquals(8, productRepository.findById(testProduct.getProductId()).orElseThrow().getStock());
+        assertEquals(8,
+                productRepository.findById(testProduct.getProductId()).orElseThrow().getStock());
     }
 
     @Test
@@ -141,8 +137,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 20)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isConflict());
 
@@ -161,8 +156,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isConflict());
 
@@ -178,8 +172,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(9999L, 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
 
@@ -195,8 +188,7 @@ class OrderIntegrationTest {
         payload.put("billingAddress", buildAddressMap());
         payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
 
@@ -212,8 +204,7 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isCreated());
 
@@ -223,11 +214,10 @@ class OrderIntegrationTest {
         Map<String, Object> payPayload = new HashMap<>();
         payPayload.put("paymentMethod", "PAYPAL");
 
-        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payPayload)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PAID"))
+        mockMvc.perform(
+                post("/api/v1/orders/" + orderId + "/pay").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payPayload)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PAID"))
                 .andExpect(jsonPath("$.paymentStatus").value("PAID"));
 
         Order paidOrder = orderRepository.findById(orderId).orElseThrow();
@@ -245,8 +235,7 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isCreated());
 
@@ -256,14 +245,14 @@ class OrderIntegrationTest {
         Map<String, Object> payPayload = new HashMap<>();
         payPayload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payPayload)))
+        mockMvc.perform(
+                post("/api/v1/orders/" + orderId + "/pay").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payPayload)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payPayload)))
+        mockMvc.perform(
+                post("/api/v1/orders/" + orderId + "/pay").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payPayload)))
                 .andExpect(status().isConflict());
     }
 
@@ -276,15 +265,12 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isNotFound());
 
-        mockMvc.perform(post("/api/v1/orders/1/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/orders/1/pay").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"CREDIT_CARD\"}")).andExpect(status().isNotFound());
     }
 
     @Test
@@ -296,25 +282,23 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 3)));
 
-        String response = mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createPayload)))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        String response = mockMvc
+                .perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createPayload)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
         Long orderId = objectMapper.readTree(response).get("orderId").asLong();
 
-        Product productAfterCreate = productRepository.findById(testProduct.getProductId()).orElseThrow();
+        Product productAfterCreate =
+                productRepository.findById(testProduct.getProductId()).orElseThrow();
         assertEquals(7, productAfterCreate.getStock());
 
         mockMvc.perform(post("/api/v1/orders/" + orderId + "/cancel")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
 
-        Product productAfterCancel = productRepository.findById(testProduct.getProductId()).orElseThrow();
+        Product productAfterCancel =
+                productRepository.findById(testProduct.getProductId()).orElseThrow();
         assertEquals(10, productAfterCancel.getStock());
 
         Order cancelledOrder = orderRepository.findById(orderId).orElseThrow();
@@ -330,31 +314,135 @@ class OrderIntegrationTest {
         createPayload.put("billingAddress", buildAddressMap());
         createPayload.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
 
-        String response = mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createPayload)))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        String response = mockMvc
+                .perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createPayload)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
         Long orderId = objectMapper.readTree(response).get("orderId").asLong();
 
-        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paymentStatus").value("PAID"));
+        mockMvc.perform(
+                post("/api/v1/orders/" + orderId + "/pay").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"CREDIT_CARD\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.paymentStatus").value("PAID"));
 
         mockMvc.perform(post("/api/v1/orders/" + orderId + "/cancel")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"))
                 .andExpect(jsonPath("$.paymentStatus").value("REFUNDED"));
 
         Order cancelledOrder = orderRepository.findById(orderId).orElseThrow();
         assertEquals("CANCELLED", cancelledOrder.getStatus().toString());
         assertEquals("REFUNDED", cancelledOrder.getPaymentStatus().toString());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrdersShouldReturnAllUserOrders() throws Exception {
+        Map<String, Object> payload1 = new HashMap<>();
+        payload1.put("paymentMethod", "CREDIT_CARD");
+        payload1.put("shippingAddress", buildAddressMap());
+        payload1.put("billingAddress", buildAddressMap());
+        payload1.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        Map<String, Object> payload2 = new HashMap<>();
+        payload2.put("paymentMethod", "PAYPAL");
+        payload2.put("shippingAddress", buildAddressMap());
+        payload2.put("billingAddress", buildAddressMap());
+        payload2.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
+
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload1)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload2)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/orders").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.content[0].userResponse.email").value("test@example.com"))
+                .andExpect(jsonPath("$.content[1].userResponse.email").value("test@example.com"));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrdersShouldReturnEmptyPageWhenNoOrders() throws Exception {
+        mockMvc.perform(get("/api/v1/orders").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrdersWithPaginationShouldReturnPagedResults() throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload))).andExpect(status().isCreated());
+
+        mockMvc.perform(
+                get("/api/v1/orders?page=0&size=10").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.size").value(10));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrderByIdShouldReturnOrderDetailsWhenExists() throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        mockMvc.perform(get("/api/v1/orders/" + orderId)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(orderId))
+                .andExpect(jsonPath("$.userResponse.email").value("test@example.com"))
+                .andExpect(jsonPath("$.reference").exists())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrderByIdShouldReturn404WhenOrderDoesNotBelongToUser() throws Exception {
+
+        // Create order as user1
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        // Another user tries to access it
+        mockMvc.perform(get("/api/v1/orders/" + orderId).with(
+                org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+                        .user("other@example.com")))
+                .andExpect(status().isNotFound());
     }
 
     private Map<String, Object> buildAddressMap() {

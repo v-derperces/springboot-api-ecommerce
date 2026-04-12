@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
 import com.vderperces.ecommerce.enums.OrderStatus;
@@ -45,10 +43,8 @@ import com.vderperces.ecommerce.repository.UserRepository;
 @Service
 public class OrderService {
 
-    private static final Set<PaymentMethod> ALLOWED_METHODS = EnumSet.of(
-            PaymentMethod.CREDIT_CARD,
-            PaymentMethod.PAYPAL,
-            PaymentMethod.BANK_TRANSFER);
+    private static final Set<PaymentMethod> ALLOWED_METHODS = EnumSet.of(PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYPAL, PaymentMethod.BANK_TRANSFER);
 
     /** Repository used to manage {@link Order} persistence operations. */
     private final OrderRepository orderRepository;
@@ -73,11 +69,11 @@ public class OrderService {
     /**
      * Constructs an {@code OrderService} with required dependencies.
      *
-     * @param orderRepository   repository for order persistence
-     * @param userRepository    repository for user retrieval
+     * @param orderRepository repository for order persistence
+     * @param userRepository repository for user retrieval
      * @param productRepository repository for product retrieval and updates
-     * @param addressMapper     mapper for address conversion
-     * @param orderMapper       mapper for order conversion
+     * @param addressMapper mapper for address conversion
+     * @param orderMapper mapper for order conversion
      */
     public OrderService(final OrderRepository orderRepository, final UserRepository userRepository,
             final ProductRepository productRepository, final AddressMapper addressMapper,
@@ -101,14 +97,13 @@ public class OrderService {
      * <li>Retries up to 3 times in case of reference conflicts</li>
      * </ul>
      *
-     * @param request  the order request containing items and addresses
+     * @param request the order request containing items and addresses
      * @param username the email of the user placing the order
      * @return the created order as {@link OrderResponse}
      *
-     * @throws NotFoundException          if the user or a product is not found
+     * @throws NotFoundException if the user or a product is not found
      * @throws InsufficientStockException if a product does not have enough stock
-     * @throws OrderCreationException     if the order cannot be created after
-     *                                    retries
+     * @throws OrderCreationException if the order cannot be created after retries
      */
     @Transactional
     public OrderResponse createOrder(OrderRequest request, String username) {
@@ -132,7 +127,8 @@ public class OrderService {
 
                 List<OrderItem> items = request.getItems().stream().map(itemReq -> {
                     Product product = productRepository.findById(itemReq.getProductId())
-                            .orElseThrow(() -> new NotFoundException("Product not found: " + itemReq.getProductId()));
+                            .orElseThrow(() -> new NotFoundException(
+                                    "Product not found: " + itemReq.getProductId()));
 
                     if (!product.isActive()) {
                         throw new ProductUnavailableException(
@@ -143,9 +139,11 @@ public class OrderService {
                     int quantity = itemReq.getQuantity();
 
                     if (product.getStock() < quantity) {
-                        LOGGER.warn("Insufficient stock for product '{}' (requested={}, available={})",
+                        LOGGER.warn(
+                                "Insufficient stock for product '{}' (requested={}, available={})",
                                 product.getName(), quantity, product.getStock());
-                        throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
+                        throw new InsufficientStockException(
+                                "Insufficient stock for product: " + product.getName());
                     }
 
                     product.setStock(product.getStock() - quantity);
@@ -170,51 +168,51 @@ public class OrderService {
             } catch (DataIntegrityViolationException e) {
                 if (attempt == 2) {
                     LOGGER.warn("Order creation failed after retries due to reference conflict", e);
-                    throw new OrderCreationException("Unable to create order at this time. Please try again later.");
+                    throw new OrderCreationException(
+                            "Unable to create order at this time. Please try again later.");
                 }
                 LOGGER.debug("Reference conflict on attempt {}, retrying...", attempt + 1);
             }
         }
-        throw new OrderCreationException("Unexpected error creating order. Please contact support.");
+        throw new OrderCreationException(
+                "Unexpected error creating order. Please contact support.");
     }
 
     /**
      * Processes payment for an existing order.
      * <p>
-     * This method validates that the order exists, belongs to the authenticated
-     * user,
-     * and is in CREATED status before processing the payment. Upon successful
-     * payment,
-     * the order status is updated to PAID, payment status to PAID, and paidAt
-     * timestampis set.
+     * This method validates that the order exists, belongs to the authenticated user, and is in CREATED status before
+     * processing the payment. Upon successful payment, the order status is updated to PAID, payment status to PAID, and
+     * paidAt timestampis set.
      *
-     * @param orderId       the ID of the order to pay for
+     * @param orderId the ID of the order to pay for
      * @param paymentMethod the payment method used (e.g., CREDIT_CARD, PAYPAL)
-     * @param username      the email of the authenticated user
+     * @param username the email of the authenticated user
      * @return the updated order as {@link OrderResponse}
      *
-     * @throws NotFoundException if the order does not exist or does not belong to
-     *                           the user
+     * @throws NotFoundException if the order does not exist or does not belong to the user
      * @throws ConflictException if the order is not in CREATED status
      */
     @Transactional
     public OrderResponse payOrder(Long orderId, PaymentMethod paymentMethod, String username) {
         if (!ALLOWED_METHODS.contains(paymentMethod)) {
-            throw new InvalidPaymentMethodException("Payment method '" + paymentMethod + "' is not allowed");
+            throw new InvalidPaymentMethodException(
+                    "Payment method '" + paymentMethod + "' is not allowed");
         }
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Payment aborted. Order not found: " + orderId));
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new NotFoundException("Payment aborted. Order not found: " + orderId));
 
         if (!order.getUser().getEmail().equals(username)) {
-            LOGGER.warn("User {} attempted to pay for order {} which belongs to another user", username, orderId);
+            LOGGER.warn("User {} attempted to pay for order {} which belongs to another user",
+                    username, orderId);
             throw new NotFoundException("Order not found: " + orderId);
         }
 
         if (order.getStatus() != OrderStatus.CREATED) {
             LOGGER.warn("Cannot pay for order {} in status {}", orderId, order.getStatus());
-            throw new InvalidOrderStatusException(
-                    "Order cannot be paid because it is " + order.getStatus().toString().toLowerCase());
+            throw new InvalidOrderStatusException("Order cannot be paid because it is "
+                    + order.getStatus().toString().toLowerCase());
         }
 
         // TODO: integrate real payment gateway here
@@ -234,10 +232,10 @@ public class OrderService {
     /**
      * Cancels an existing order and restores stock for its items.
      * <p>
-     * The order can only be cancelled if it is not in a final state
-     * (DELIVERED or CANCELLED) and belongs to the authenticated user.
+     * The order can only be cancelled if it is not in a final state (DELIVERED or CANCELLED) and belongs to the
+     * authenticated user.
      *
-     * @param orderId  the id of the order to cancel
+     * @param orderId the id of the order to cancel
      * @param username the email of the authenticated user
      * @return the cancelled order as {@link OrderResponse}
      */
@@ -251,8 +249,8 @@ public class OrderService {
         }
 
         if (!order.isCancellable()) {
-            throw new InvalidOrderStatusException(
-                    "Order cannot be cancelled because it is " + order.getStatus().toString().toLowerCase());
+            throw new InvalidOrderStatusException("Order cannot be cancelled because it is "
+                    + order.getStatus().toString().toLowerCase());
         }
 
         if (order.getStatus() == OrderStatus.PAID) {
@@ -273,6 +271,51 @@ public class OrderService {
     }
 
     /**
+     * Retrieves all orders for the authenticated user with pagination support.
+     * <p>
+     * This method ensures that users can only access their own orders by validating the ownership of each order against
+     * the authenticated username.
+     *
+     * @param username the email of the authenticated user
+     * @param pageable pagination and sorting parameters (default: page 0, size 20)
+     * @return a page of orders belonging to the user, mapped to {@link OrderResponse}
+     *
+     * @throws NotFoundException if the user does not exist
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getUserOrders(String username, Pageable pageable) {
+
+        // Fetch paginated orders for user
+        Page<Order> ordersPage = orderRepository.findByUser_Email(username, pageable);
+
+        List<OrderResponse> orderResponses = ordersPage.getContent().stream()
+                .map(orderMapper::toDTO).collect(Collectors.toList());
+
+        return new PageImpl<>(orderResponses, pageable, ordersPage.getTotalElements());
+    }
+
+    /**
+     * Retrieves a single order belonging to the authenticated user.
+     *
+     * <p>
+     * This method ensures that the order exists and is associated with the given username. If no order is found, or if
+     * it does not belong to the user, a {@link NotFoundException} is thrown.
+     * </p>
+     *
+     * @param username the email of the authenticated user
+     * @param orderId the id of the order to retrieve
+     * @return the corresponding {@link OrderResponse}
+     * @throws NotFoundException if the order does not exist or does not belong to the user
+     */
+    public OrderResponse getUserOrderById(String username, Long orderId) {
+
+        Order order = orderRepository.findByOrderIdAndUser_Email(orderId, username)
+                .orElseThrow(() -> new NotFoundException("Order not found with id: " + orderId));
+
+        return orderMapper.toDTO(order);
+    }
+
+    /**
      * Generates a unique order reference.
      * <p>
      * Format: {@code ORD-YYYYMM-XXXXXXXX}
@@ -285,9 +328,7 @@ public class OrderService {
      */
     private String generateOrderReference() {
         String yearMonth = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        return "ORD-" + yearMonth + "-" + UUID.randomUUID().toString()
-                .replace("-", "")
-                .substring(0, 8)
-                .toUpperCase();
+        return "ORD-" + yearMonth + "-"
+                + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
     }
 }

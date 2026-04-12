@@ -1,6 +1,7 @@
 package com.vderperces.ecommerce.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -235,6 +236,73 @@ class OrderControllerTest {
     void cancelOrderWithoutAuthenticationShouldReturn401() throws Exception {
         mockMvc.perform(post("/api/v1/orders/1/cancel"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrdersShouldReturn200WithPaginatedOrders() throws Exception {
+        OrderResponse order1 = buildOrderResponse(1L, "ORD-202604-AAAAAAAA", "test@example.com");
+        OrderResponse order2 = buildOrderResponse(2L, "ORD-202604-BBBBBBBB", "test@example.com");
+
+        Page<OrderResponse> page = new PageImpl<>(List.of(order1, order2));
+
+        when(orderService.getUserOrders(anyString(), any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/orders")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].orderId").value(1))
+                .andExpect(jsonPath("$.content[1].orderId").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.number").value(0));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getUserOrdersWithPaginationShouldReturn200() throws Exception {
+        OrderResponse order1 = buildOrderResponse(1L, "ORD-202604-AAAAAAAA", "test@example.com");
+
+        Page<OrderResponse> page = new PageImpl<>(List.of(order1),
+                org.springframework.data.domain.PageRequest.of(0, 10), 1);
+
+        when(orderService.getUserOrders(anyString(), any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/orders?page=0&size=10")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void getUserOrdersWithoutAuthenticationShouldReturn401() throws Exception {
+        mockMvc.perform(get("/api/v1/orders").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getOrderByIdShouldReturn200() throws Exception {
+
+        OrderResponse response = buildOrderResponse(1L, "ORD-123", "test@example.com");
+
+        when(orderService.getUserOrderById(anyString(), any(Long.class))).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/orders/1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.reference").value("ORD-123"));
+    }
+
+    @Test
+    @WithMockUser(username = "test@example.com", roles = "USER")
+    void getOrderByIdNotFoundShouldReturn404() throws Exception {
+
+        when(orderService.getUserOrderById(anyString(), anyLong()))
+                .thenThrow(new NotFoundException("Order not found"));
+
+        mockMvc.perform(get("/api/v1/orders/999")).andExpect(status().isNotFound());
     }
 
     private OrderRequest buildOrderRequest() {
