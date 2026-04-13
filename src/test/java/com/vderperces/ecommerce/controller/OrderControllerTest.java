@@ -3,6 +3,7 @@ package com.vderperces.ecommerce.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,6 +36,7 @@ import com.vderperces.ecommerce.dto.user.UserResponse;
 import com.vderperces.ecommerce.enums.OrderStatus;
 import com.vderperces.ecommerce.enums.PaymentMethod;
 import com.vderperces.ecommerce.enums.PaymentStatus;
+import com.vderperces.ecommerce.exceptions.InvalidOrderStatusException;
 import com.vderperces.ecommerce.exceptions.NotFoundException;
 import com.vderperces.ecommerce.service.OrderService;
 
@@ -198,7 +200,7 @@ class OrderControllerTest {
         OrderResponse response = buildOrderResponse(1L, "ORD-202604-ABCDEFGH", "test@example.com");
         response.setStatus(OrderStatus.CANCELLED);
 
-        when(orderService.cancelOrder(any(Long.class), anyString())).thenReturn(response);
+        when(orderService.cancelOrderAsUser(any(Long.class), anyString())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/orders/1/cancel")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(1))
@@ -209,7 +211,7 @@ class OrderControllerTest {
     @Test
     @WithMockUser(username = "test@example.com", roles = "USER")
     void cancelOrderNotFoundShouldReturn404() throws Exception {
-        when(orderService.cancelOrder(any(Long.class), anyString()))
+        when(orderService.cancelOrderAsUser(any(Long.class), anyString()))
                 .thenThrow(new NotFoundException("Order not found"));
 
         mockMvc.perform(post("/api/v1/orders/999/cancel")).andExpect(status().isNotFound());
@@ -333,6 +335,59 @@ class OrderControllerTest {
     void getOrderByIdForAdminAsUserShouldReturnForbidden() throws Exception {
 
         mockMvc.perform(get("/api/v1/admin/orders/1")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldCancelOrderAsAdmin() throws Exception {
+
+        OrderResponse response = buildOrderResponse(1L, "ORD-123", "user@example.com");
+        response.setStatus(OrderStatus.CANCELLED);
+
+        when(orderService.cancelOrderAsAdmin(1L)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/admin/orders/1/cancel")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        verify(orderService).cancelOrderAsAdmin(1L);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelAsAdminShouldReturn404WhenOrderNotFound() throws Exception {
+
+        when(orderService.cancelOrderAsAdmin(1L))
+                .thenThrow(new NotFoundException("Order not found: 1"));
+
+        mockMvc.perform(post("/api/v1/admin/orders/1/cancel")).andExpect(status().isNotFound());
+
+        verify(orderService).cancelOrderAsAdmin(1L);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelAsAdminShouldReturn409WhenOrderCannotBeCancelled() throws Exception {
+
+        when(orderService.cancelOrderAsAdmin(1L)).thenThrow(
+                new InvalidOrderStatusException("Order cannot be cancelled because it is shipped"));
+
+        mockMvc.perform(post("/api/v1/admin/orders/1/cancel")).andExpect(status().isConflict());
+
+        verify(orderService).cancelOrderAsAdmin(1L);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturn200EvenIfAlreadyCancelled() throws Exception {
+
+        OrderResponse response = buildOrderResponse(1L, "ORD-123", "user@example.com");
+        response.setStatus(OrderStatus.CANCELLED);
+
+        when(orderService.cancelOrderAsAdmin(1L)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/admin/orders/1/cancel")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
 
     private OrderRequest buildOrderRequest() {

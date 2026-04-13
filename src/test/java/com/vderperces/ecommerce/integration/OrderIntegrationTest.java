@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vderperces.ecommerce.enums.OrderStatus;
 import com.vderperces.ecommerce.model.Category;
 import com.vderperces.ecommerce.model.Order;
 import com.vderperces.ecommerce.model.Product;
@@ -468,6 +469,134 @@ class OrderIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/orders")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelOrderAsAdminShouldUpdateStatusAndRestoreStock() throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 3)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders")
+                        .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        assertEquals(7,
+                productRepository.findById(testProduct.getProductId()).orElseThrow().getStock());
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + orderId + "/cancel"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        assertEquals(10,
+                productRepository.findById(testProduct.getProductId()).orElseThrow().getStock());
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertEquals("CANCELLED", order.getStatus().toString());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelPaidOrderAsAdminShouldSetRefundedPaymentStatus() throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 2)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders")
+                        .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        // PAY ORDER
+        mockMvc.perform(post("/api/v1/orders/" + orderId + "/pay")
+                .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"CREDIT_CARD\"}")).andExpect(status().isOk());
+
+        // CANCEL AS ADMIN
+        mockMvc.perform(post("/api/v1/admin/orders/" + orderId + "/cancel"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.paymentStatus").value("REFUNDED"));
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertEquals("REFUNDED", order.getPaymentStatus().toString());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelAlreadyCancelledOrderShouldBeIdempotent() throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 5)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders")
+                        .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        // FIRST CANCEL
+        mockMvc.perform(post("/api/v1/admin/orders/" + orderId + "/cancel"))
+                .andExpect(status().isOk());
+
+        // STOCK restored
+        assertEquals(10,
+                productRepository.findById(testProduct.getProductId()).orElseThrow().getStock());
+
+        // SECOND CANCEL (idempotent)
+        mockMvc.perform(post("/api/v1/admin/orders/" + orderId + "/cancel")).andExpect(status().isOk());
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertEquals("CANCELLED", order.getStatus().toString());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelShippedOrderShouldReturnConflict() throws Exception {
+
+        // create order
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        String response = mockMvc
+                .perform(post("/api/v1/orders")
+                        .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andReturn().getResponse().getContentAsString();
+
+        Long orderId = objectMapper.readTree(response).get("orderId").asLong();
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        order.setStatus(OrderStatus.SHIPPED);
+        orderRepository.save(order);
+
+        mockMvc.perform(post("/api/v1/admin/orders/" + orderId + "/cancel"))
+                .andExpect(status().isConflict());
     }
 
     private Map<String, Object> buildAddressMap() {

@@ -77,7 +77,7 @@ public class OrderController {
     @PostMapping("/orders/{orderId}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId,
             final Authentication authentication) {
-        return ResponseEntity.ok(orderService.cancelOrder(orderId, authentication.getName()));
+        return ResponseEntity.ok(orderService.cancelOrderAsUser(orderId, authentication.getName()));
     }
 
     /**
@@ -130,6 +130,25 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
 
         return ResponseEntity.ok(orderService.getOrderByIdForAdmin(orderId));
+    }
+
+    /**
+     * Cancels an order as an admin.
+     *
+     * <p>
+     * Allows cancelling any order except those already delivered or shipped. If the order is already cancelled, the
+     * operation is idempotent and returns the current state.
+     * </p>
+     *
+     * @param orderId the id of the order to cancel
+     * @return the cancelled order
+     */
+    @PostMapping("/admin/orders/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId) {
+
+        OrderResponse response = orderService.cancelOrderAsAdmin(orderId);
+
+        return ResponseEntity.ok(response);
     }
 
 }

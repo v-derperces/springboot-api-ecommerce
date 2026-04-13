@@ -283,7 +283,8 @@ class OrderServiceTest {
         order.setStatus(OrderStatus.CREATED);
         order.setUser(user);
         order.setItems(List.of(item));
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByOrderIdAndUser_Email(1L, "user@example.com"))
+                .thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         OrderResponse canceledResponse = new OrderResponse();
@@ -291,7 +292,7 @@ class OrderServiceTest {
         canceledResponse.setStatus(OrderStatus.CANCELLED);
         when(orderMapper.toDTO(any(Order.class))).thenReturn(canceledResponse);
 
-        OrderResponse result = orderService.cancelOrder(1L, "user@example.com");
+        OrderResponse result = orderService.cancelOrderAsUser(1L, "user@example.com");
 
         assertEquals(OrderStatus.CANCELLED, result.getStatus());
         assertEquals(7, product.getStock());
@@ -308,10 +309,11 @@ class OrderServiceTest {
         order.setStatus(OrderStatus.DELIVERED);
         order.setUser(user);
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByOrderIdAndUser_Email(1L, "user@example.com"))
+                .thenReturn(Optional.of(order));
 
         assertThrows(InvalidOrderStatusException.class,
-                () -> orderService.cancelOrder(1L, "user@example.com"));
+                () -> orderService.cancelOrderAsUser(1L, "user@example.com"));
     }
 
     @Test

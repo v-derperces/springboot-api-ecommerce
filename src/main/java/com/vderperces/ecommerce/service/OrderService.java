@@ -240,34 +240,24 @@ public class OrderService {
      * @return the cancelled order as {@link OrderResponse}
      */
     @Transactional
-    public OrderResponse cancelOrder(Long orderId, String username) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+    public OrderResponse cancelOrderAsUser(Long orderId, String username) {
 
-        if (!order.getUser().getEmail().equals(username)) {
-            throw new NotFoundException("Order not found: " + orderId);
-        }
+        LOGGER.info("User request to cancel order id={}", orderId);
 
-        if (!order.isCancellable()) {
-            throw new InvalidOrderStatusException("Order cannot be cancelled because it is "
-                    + order.getStatus().toString().toLowerCase());
-        }
+        Order order =
+                orderRepository.findByOrderIdAndUser_Email(orderId, username).orElseThrow(() -> {
+                    LOGGER.warn("Order not found for cancellation id={}", orderId);
+                    return new NotFoundException("Order not found for cancellation: " + orderId);
+                });
 
-        if (order.getStatus() == OrderStatus.PAID) {
-            // TODO: call payment provider to process refund
-            order.setPaymentStatus(PaymentStatus.REFUNDED);
-        }
+        Order updated = cancel(order, false);
 
-        order.getItems().forEach(item -> {
-            Product product = item.getProduct();
-            product.setStock(product.getStock() + item.getQuantity());
-        });
+        Order saved = orderRepository.save(updated);
 
-        order.setStatus(OrderStatus.CANCELLED);
-        order.setUpdatedAt(LocalDateTime.now());
+        LOGGER.info("Order id={} cancelled by user", orderId);
 
-        Order cancelledOrder = orderRepository.save(order);
-        return orderMapper.toDTO(cancelledOrder);
+        return orderMapper.toDTO(saved);
+
     }
 
     /**
@@ -345,6 +335,116 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Order not found with id: " + orderId));
 
         return orderMapper.toDTO(order);
+    }
+
+    /**
+     * Cancels an order as an administrator.
+     *
+     * <p>
+     * Unlike a regular user, an administrator can cancel an order even if it is no longer in a "cancellable" state,
+     * except when the order is already delivered.
+     * </p>
+     *
+     * <p>
+     * This method:
+     * <ul>
+     * <li>Retrieves the order</li>
+     * <li>Applies cancellation business rules (admin mode)</li>
+     * <li>Persists the changes</li>
+     * <li>Returns the updated order as a DTO</li>
+     * </ul>
+     *
+     * @param orderId the identifier of the order to cancel
+     * @return the cancelled order as a DTO
+     *
+     * @throws NotFoundException if the order does not exist
+     * @throws InvalidOrderStatusException if the order cannot be cancelled
+     */
+    @Transactional
+    public OrderResponse cancelOrderAsAdmin(Long orderId) {
+
+        LOGGER.info("Admin request to cancel order id={}", orderId);
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> {
+            LOGGER.warn("Order not found for cancellation id={}", orderId);
+            return new NotFoundException("Order not found for cancellation: " + orderId);
+        });
+
+        Order updated = cancel(order, true);
+
+        Order saved = orderRepository.save(updated);
+
+        LOGGER.info("Order id={} cancelled by admin", orderId);
+
+        return orderMapper.toDTO(saved);
+    }
+
+    /**
+     * Cancels an order by applying business rules depending on the context (admin or regular user).
+     *
+     * <p>
+     * Applied rules:
+     * <ul>
+     * <li>User: cancellation allowed only if the order is in a cancellable state (via {@code isCancellable()})</li>
+     * <li>Admin: can cancel any order except if it is already delivered</li>
+     * <li>If the order is paid: triggers a refund (to be implemented)</li>
+     * <li>Restores stock for each order item</li>
+     * <li>Updates the order status to {@code CANCELLED}</li>
+     * </ul>
+     *
+     * @param order the order to cancel
+     * @param isAdmin whether the operation is performed by an administrator
+     * @return the updated order (not yet persisted)
+     *
+     * @throws InvalidOrderStatusException if cancellation is not allowed
+     */
+    private Order cancel(Order order, boolean isAdmin) {
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            LOGGER.info("Order id={} is already cancelled", order.getOrderId());
+            return order;
+        }
+
+        LOGGER.info("Cancelling order id={} as {}", order.getOrderId(), isAdmin ? "ADMIN" : "USER");
+
+        if (!isAdmin) {
+            if (!order.isCancellable()) {
+                LOGGER.warn("Cancellation refused for order id={} (user) due to status={}",
+                        order.getOrderId(), order.getStatus());
+                throw new InvalidOrderStatusException("Order cannot be cancelled because it is "
+                        + order.getStatus().toString().toLowerCase());
+            }
+        } else {
+            if (order.getStatus() == OrderStatus.SHIPPED
+                    || order.getStatus() == OrderStatus.DELIVERED) {
+                LOGGER.warn("Cancellation refused for order id={} (admin) due to status={}",
+                        order.getOrderId(), order.getStatus());
+                throw new InvalidOrderStatusException("Order cannot be cancelled because it is "
+                        + order.getStatus().toString().toLowerCase());
+            }
+        }
+
+        if (order.getStatus() == OrderStatus.PAID) {
+            LOGGER.info("Triggering refund for order id={}", order.getOrderId());
+            // TODO: call payment provider to process refund
+            order.setPaymentStatus(PaymentStatus.REFUNDED);
+        }
+
+        order.getItems().forEach(item -> {
+            Product product = item.getProduct();
+            int newStock = product.getStock() + item.getQuantity();
+            product.setStock(newStock);
+
+            LOGGER.debug("Restored stock for product id={} (+{}), newStock={}",
+                    product.getProductId(), item.getQuantity(), newStock);
+        });
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        LOGGER.info("Order id={} successfully cancelled", order.getOrderId());
+
+        return order;
     }
 
     /**
