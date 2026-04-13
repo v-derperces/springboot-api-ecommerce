@@ -3,6 +3,7 @@ package com.vderperces.ecommerce.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
@@ -356,6 +358,77 @@ class OrderServiceTest {
         OrderResponse result = orderService.getUserOrderById(email, 1L);
 
         assertEquals(1L, result.getOrderId());
+    }
+
+    @Test
+    void getAllOrdersShouldReturnMappedPage() {
+
+        Order order1 = buildOrder(1L, "user1@example.com");
+        Order order2 = buildOrder(2L, "user2@example.com");
+        Order order3 = buildOrder(3L, "user3@example.com");
+        Order order4 = buildOrder(4L, "user4@example.com");
+        Order order5 = buildOrder(5L, "user5@example.com");
+
+        Page<Order> ordersPage = new PageImpl<>(List.of(order1, order2, order3, order4, order5));
+
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(ordersPage);
+        when(orderMapper.toDTO(any(Order.class))).thenAnswer(inv -> {
+            Order o = inv.getArgument(0);
+            OrderResponse dto = new OrderResponse();
+            dto.setOrderId(o.getOrderId());
+            dto.setReference("REF" + o.getOrderId());
+            return dto;
+        });
+
+        Page<OrderResponse> result = orderService.getAllOrders(PageRequest.of(0, 10));
+
+        assertEquals(5, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+    }
+
+    @Test
+    void getAllOrdersShouldReturnEmptyPageWhenNoOrders() {
+
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+
+        Page<OrderResponse> result = orderService.getAllOrders(PageRequest.of(0, 10));
+
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+    }
+
+    @Test
+    void getOrderByIdForAdminShouldReturnOrder() {
+
+        Order order = buildOrder(1L, "user@example.com");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        OrderResponse dto = new OrderResponse();
+        dto.setOrderId(1L);
+        when(orderMapper.toDTO(order)).thenReturn(dto);
+
+        OrderResponse result = orderService.getOrderByIdForAdmin(1L);
+
+        assertEquals(1L, result.getOrderId());
+    }
+
+    @Test
+    void getOrderByIdForAdminShouldThrowWhenNotFound() {
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> orderService.getOrderByIdForAdmin(1L));
+    }
+
+    private Order buildOrder(Long orderId, String email) {
+        User user = new User();
+        user.setEmail(email);
+
+        Order order = new Order();
+        order.setOrderId(orderId);
+        order.setUser(user);
+
+        return order;
     }
 
 }

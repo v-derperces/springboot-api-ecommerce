@@ -316,6 +316,38 @@ public class OrderService {
     }
 
     /**
+     * Retrieve all orders (admin access).
+     *
+     * @param pageable pagination and sorting parameters
+     * @return paginated list of all orders
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+
+        Page<Order> ordersPage = orderRepository.findAll(pageable);
+
+        List<OrderResponse> orderResponses = ordersPage.getContent().stream()
+                .map(orderMapper::toDTO).collect(Collectors.toList());
+
+        return new PageImpl<>(orderResponses, pageable, ordersPage.getTotalElements());
+    }
+
+    /**
+     * Retrieve a specific order by its ID (admin access).
+     *
+     * @param orderId the ID of the order
+     * @return the order details
+     * @throws NotFoundException if the order does not exist
+     */
+    public OrderResponse getOrderByIdForAdmin(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found with id: " + orderId));
+
+        return orderMapper.toDTO(order);
+    }
+
+    /**
      * Generates a unique order reference.
      * <p>
      * Format: {@code ORD-YYYYMM-XXXXXXXX}

@@ -8,11 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,7 +23,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vderperces.ecommerce.dto.address.AddressRequest;
 import com.vderperces.ecommerce.dto.address.AddressResponse;
@@ -67,10 +64,8 @@ class OrderControllerTest {
 
         when(orderService.createOrder(any(OrderRequest.class), anyString())).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").value(1))
                 .andExpect(jsonPath("$.reference").value("ORD-202604-ABCDEFGH"))
                 .andExpect(jsonPath("$.totalAmount").value("299.98"))
@@ -90,8 +85,7 @@ class OrderControllerTest {
         payload.put("billingAddress", buildAddressRequest());
         payload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
     }
@@ -104,8 +98,7 @@ class OrderControllerTest {
         payload.put("shippingAddress", buildAddressRequest());
         payload.put("paymentMethod", "CREDIT_CARD");
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
     }
@@ -116,8 +109,7 @@ class OrderControllerTest {
         var payload = new java.util.HashMap<String, Object>();
         payload.put("items", List.of(buildOrderItemRequest()));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
     }
@@ -130,8 +122,7 @@ class OrderControllerTest {
         when(orderService.createOrder(any(OrderRequest.class), anyString()))
                 .thenThrow(new NotFoundException("User not found"));
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
     }
@@ -140,8 +131,7 @@ class OrderControllerTest {
     void createOrderWithoutAuthenticationShouldReturn401() throws Exception {
         OrderRequest request = buildOrderRequest();
 
-        mockMvc.perform(post("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
@@ -161,11 +151,9 @@ class OrderControllerTest {
         when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
                 .thenReturn(paidResponse);
 
-        mockMvc.perform(post("/api/v1/orders/1/pay")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders/1/pay").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.orderId").value(1))
                 .andExpect(jsonPath("$.status").value("PAID"))
                 .andExpect(jsonPath("$.paymentStatus").value("PAID"));
     }
@@ -175,8 +163,7 @@ class OrderControllerTest {
     void payOrderWithoutPaymentMethodShouldReturn400() throws Exception {
         var payload = new java.util.HashMap<String, Object>();
 
-        mockMvc.perform(post("/api/v1/orders/1/pay")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders/1/pay").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
     }
@@ -190,8 +177,7 @@ class OrderControllerTest {
         when(orderService.payOrder(any(Long.class), any(PaymentMethod.class), anyString()))
                 .thenThrow(new NotFoundException("Order not found"));
 
-        mockMvc.perform(post("/api/v1/orders/999/pay")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders/999/pay").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isNotFound());
     }
@@ -201,8 +187,7 @@ class OrderControllerTest {
         OrderPaymentRequest paymentRequest = new OrderPaymentRequest();
         paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
 
-        mockMvc.perform(post("/api/v1/orders/1/pay")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/orders/1/pay").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(paymentRequest)))
                 .andExpect(status().isUnauthorized());
     }
@@ -215,8 +200,7 @@ class OrderControllerTest {
 
         when(orderService.cancelOrder(any(Long.class), anyString())).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/orders/1/cancel"))
-                .andExpect(status().isOk())
+        mockMvc.perform(post("/api/v1/orders/1/cancel")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(1))
                 .andExpect(jsonPath("$.reference").value("ORD-202604-ABCDEFGH"))
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
@@ -228,14 +212,12 @@ class OrderControllerTest {
         when(orderService.cancelOrder(any(Long.class), anyString()))
                 .thenThrow(new NotFoundException("Order not found"));
 
-        mockMvc.perform(post("/api/v1/orders/999/cancel"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/orders/999/cancel")).andExpect(status().isNotFound());
     }
 
     @Test
     void cancelOrderWithoutAuthenticationShouldReturn401() throws Exception {
-        mockMvc.perform(post("/api/v1/orders/1/cancel"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/orders/1/cancel")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -248,10 +230,8 @@ class OrderControllerTest {
 
         when(orderService.getUserOrders(anyString(), any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/orders")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
+        mockMvc.perform(get("/api/v1/orders").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].orderId").value(1))
                 .andExpect(jsonPath("$.content[1].orderId").value(2))
                 .andExpect(jsonPath("$.totalElements").value(2))
@@ -269,10 +249,9 @@ class OrderControllerTest {
 
         when(orderService.getUserOrders(anyString(), any(Pageable.class))).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/orders?page=0&size=10")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
+        mockMvc.perform(
+                get("/api/v1/orders?page=0&size=10").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
@@ -303,6 +282,57 @@ class OrderControllerTest {
                 .thenThrow(new NotFoundException("Order not found"));
 
         mockMvc.perform(get("/api/v1/orders/999")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getAllOrdersAsAdminShouldReturnPagedOrders() throws Exception {
+
+        OrderResponse response1 = buildOrderResponse(1L, "ORD-1", "user1@example.com");
+        OrderResponse response2 = buildOrderResponse(2L, "ORD-2", "user2@example.com");
+        OrderResponse response3 = buildOrderResponse(3L, "ORD-3", "user2@example.com");
+
+        Page<OrderResponse> page = new PageImpl<>(List.of(response1, response2, response3));
+
+        when(orderService.getAllOrders(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/admin/orders")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.totalElements").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getAllOrdersWithPaginationShouldReturnCorrectPage() throws Exception {
+
+        OrderResponse response1 = buildOrderResponse(1L, "ORD-1", "user1@example.com");
+        OrderResponse response2 = buildOrderResponse(2L, "ORD-2", "user2@example.com");
+        Page<OrderResponse> page = new PageImpl<>(List.of(response1, response2));
+
+        when(orderService.getAllOrders(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/admin/orders?page=0&size=10")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(2));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getOrderByIdForAdminShouldReturnOrder() throws Exception {
+
+        OrderResponse response = buildOrderResponse(1L, "ORD-123", "user@example.com");
+
+        when(orderService.getOrderByIdForAdmin(any(Long.class))).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/admin/orders/1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.reference").value("ORD-123"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getOrderByIdForAdminAsUserShouldReturnForbidden() throws Exception {
+
+        mockMvc.perform(get("/api/v1/admin/orders/1")).andExpect(status().isForbidden());
     }
 
     private OrderRequest buildOrderRequest() {

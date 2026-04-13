@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -439,10 +440,34 @@ class OrderIntegrationTest {
         Long orderId = objectMapper.readTree(response).get("orderId").asLong();
 
         // Another user tries to access it
-        mockMvc.perform(get("/api/v1/orders/" + orderId).with(
-                org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-                        .user("other@example.com")))
+        mockMvc.perform(get("/api/v1/orders/" + orderId)
+                .with(SecurityMockMvcRequestPostProcessors.user("other@example.com")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getAllOrdersForAdminShouldReturnPagedOrders() throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentMethod", "CREDIT_CARD");
+        payload.put("shippingAddress", buildAddressMap());
+        payload.put("billingAddress", buildAddressMap());
+        payload.put("items", List.of(buildItemMap(testProduct.getProductId(), 1)));
+
+        mockMvc.perform(post("/api/v1/orders")
+                .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload))).andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/orders")
+                .with(SecurityMockMvcRequestPostProcessors.user("test@example.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload))).andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/admin/orders")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(2));
     }
 
     private Map<String, Object> buildAddressMap() {

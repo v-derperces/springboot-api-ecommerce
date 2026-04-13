@@ -26,7 +26,7 @@ import jakarta.validation.Valid;
  * where explicitly stated.
  */
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping("/api/v1")
 public class OrderController {
 
     private final OrderService orderService;
@@ -42,7 +42,7 @@ public class OrderController {
      * @param principal the authenticated user
      * @return the created order details
      */
-    @PostMapping
+    @PostMapping("/orders")
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request,
             final Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -57,7 +57,7 @@ public class OrderController {
      * @param principal the authenticated user
      * @return the updated order details with paid status
      */
-    @PostMapping("/{orderId}/pay")
+    @PostMapping("/orders/{orderId}/pay")
     public ResponseEntity<OrderResponse> payOrder(@PathVariable Long orderId,
             @Valid @RequestBody OrderPaymentRequest request, final Authentication authentication) {
         return ResponseEntity.ok(orderService.payOrder(orderId, request.getPaymentMethod(),
@@ -74,7 +74,7 @@ public class OrderController {
      * @param authentication the authenticated user
      * @return the cancelled order details with HTTP 200
      */
-    @PostMapping("/{orderId}/cancel")
+    @PostMapping("/orders/{orderId}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId,
             final Authentication authentication) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId, authentication.getName()));
@@ -87,7 +87,7 @@ public class OrderController {
      * @param pageable pagination and sorting parameters (default: page 0, size 20, sorted by createdAt DESC)
      * @return a page of the user's orders with HTTP 200
      */
-    @GetMapping
+    @GetMapping("/orders")
     public ResponseEntity<Page<OrderResponse>> getUserOrders(final Authentication authentication,
             @PageableDefault(size = 20, page = 0, sort = "createdAt",
                     direction = Sort.Direction.DESC) Pageable pageable) {
@@ -101,11 +101,35 @@ public class OrderController {
      * @param authentication the authenticated user
      * @return the order detail
      */
-    @GetMapping("/{orderId}")
+    @GetMapping("/orders/{orderId}")
     public ResponseEntity<OrderResponse> getUserOrder(@PathVariable Long orderId,
             final Authentication authentication) {
         return ResponseEntity.ok(orderService.getUserOrderById(authentication.getName(), orderId));
     }
 
+    /**
+     * Retrieve all orders (admin access).
+     *
+     * @param pageable pagination and sorting parameters
+     * @return paginated list of all orders
+     */
+    @GetMapping("/admin/orders")
+    public ResponseEntity<Page<OrderResponse>> getAllOrders(@PageableDefault(size = 20, page = 0,
+            sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(orderService.getAllOrders(pageable));
+    }
+
+    /**
+     * Retrieve a specific order by its ID (admin access).
+     *
+     * @param orderId the ID of the order
+     * @return the order details
+     */
+    @GetMapping("/admin/orders/{orderId}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
+
+        return ResponseEntity.ok(orderService.getOrderByIdForAdmin(orderId));
+    }
 
 }
