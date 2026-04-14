@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
+import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
 import com.vderperces.ecommerce.enums.OrderStatus;
 import com.vderperces.ecommerce.enums.PaymentMethod;
 import com.vderperces.ecommerce.enums.PaymentStatus;
@@ -377,6 +378,103 @@ public class OrderService {
         LOGGER.info("Order id={} cancelled by admin", orderId);
 
         return orderMapper.toDTO(saved);
+    }
+
+    /**
+     * Updates the status of an order as an administrator.
+     *
+     * <p>
+     * This method supports a strict forward progression of the order lifecycle:
+     * <ul>
+     * <li>PAID → SHIPPED</li>
+     * <li>SHIPPED → DELIVERED</li>
+     * </ul>
+     *
+     * <p>
+     * The following rules apply:
+     * <ul>
+     * <li>If the order is already in the requested status, no update is performed (no-op)</li>
+     * <li>Orders in CANCELLED or DELIVERED state cannot be modified</li>
+     * <li>Invalid transitions are rejected</li>
+     * </ul>
+     *
+     * @param orderId the identifier of the order to update
+     * @param request the requested new order status
+     * @return the updated order as a DTO
+     *
+     * @throws NotFoundException if the order does not exist
+     * @throws InvalidOrderStatusException if the transition is not allowed
+     */
+    @Transactional
+    public OrderResponse updateOrderStatusAsAdmin(Long orderId, UpdateOrderStatusRequest request) {
+
+        LOGGER.info("Admin request to update order status orderId={} newStatus={}", orderId,
+                request.getStatus());
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> {
+            LOGGER.warn("Order not found orderId={}", orderId);
+            return new NotFoundException("Order not found: " + orderId);
+        });
+
+        OrderStatus currentStatus = order.getStatus();
+        OrderStatus newStatus = request.getStatus();
+
+        // No-op: same status
+        if (currentStatus == newStatus) {
+            LOGGER.info("No-op status update for orderId={} status={}", orderId, currentStatus);
+            return orderMapper.toDTO(order);
+        }
+
+        // Final states protection
+        if (order.isFinal()) {
+            LOGGER.warn("Order status update refused orderId={} currentStatus={} newStatus={}",
+                    orderId, currentStatus, newStatus);
+
+            throw new InvalidOrderStatusException("Order cannot be updated because it is "
+                    + currentStatus.toString().toLowerCase());
+        }
+
+        // Transition validation
+        if (!isValidTransition(currentStatus, newStatus)) {
+            LOGGER.warn("Invalid status transition orderId={} from {} to {}", orderId,
+                    currentStatus, newStatus);
+
+            throw new InvalidOrderStatusException(
+                    "Invalid order status transition from " + currentStatus.toString().toLowerCase()
+                            + " to " + newStatus.toString().toLowerCase());
+        }
+
+        order.setStatus(newStatus);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        Order saved = orderRepository.save(order);
+
+        LOGGER.info("Order status updated orderId={} newStatus={}", orderId, newStatus);
+
+        return orderMapper.toDTO(saved);
+    }
+
+    /**
+     * Validates allowed order status transitions for admin operations.
+     *
+     * <p>
+     * Allowed transitions:
+     * <ul>
+     * <li>PAID → SHIPPED</li>
+     * <li>SHIPPED → DELIVERED</li>
+     * </ul>
+     *
+     * @param currentStatus current order status
+     * @param newStatus target status
+     * @return true if transition is allowed, false otherwise
+     */
+    private boolean isValidTransition(OrderStatus currentStatus, OrderStatus newStatus) {
+
+        return switch (currentStatus) {
+            case PAID -> newStatus == OrderStatus.SHIPPED;
+            case SHIPPED -> newStatus == OrderStatus.DELIVERED;
+            default -> false;
+        };
     }
 
     /**

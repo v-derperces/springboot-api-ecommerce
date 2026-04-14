@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
 import com.vderperces.ecommerce.dto.order.OrderPaymentRequest;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
@@ -149,6 +151,27 @@ public class OrderController {
         OrderResponse response = orderService.cancelOrderAsAdmin(orderId);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Updates the status of an order as an admin.
+     *
+     * <p>
+     * This endpoint allows an admin to progress an order through its lifecycle. Only forward transitions are supported:
+     * <ul>
+     * <li>PAID → SHIPPED</li>
+     * <li>SHIPPED → DELIVERED</li>
+     * </ul>
+     *
+     * @param orderId the identifier of the order to update
+     * @param request the requested status update
+     * @return the updated order
+     */
+    @PatchMapping("/admin/orders/{orderId}")
+    public ResponseEntity<OrderResponse> updateOrder(@PathVariable Long orderId,
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
+
+        return ResponseEntity.ok(orderService.updateOrderStatusAsAdmin(orderId, request));
     }
 
 }

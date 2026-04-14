@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
+import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
 import com.vderperces.ecommerce.dto.orderitem.OrderItemRequest;
 import com.vderperces.ecommerce.dto.orderitem.OrderItemResponse;
 import com.vderperces.ecommerce.dto.user.UserResponse;
@@ -420,6 +422,94 @@ class OrderServiceTest {
         when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> orderService.getOrderByIdForAdmin(1L));
+    }
+
+    @Test
+    void shouldUpdateStatusFromPaidToShipped() {
+        Order order = buildOrder(1L, "user@example.com");
+        order.setStatus(OrderStatus.PAID);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderMapper.toDTO(any())).thenReturn(new OrderResponse());
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        OrderResponse response = orderService.updateOrderStatusAsAdmin(1L, request);
+
+        assertEquals(OrderStatus.SHIPPED, order.getStatus());
+        verify(orderRepository).save(order);
+        assertNotNull(response);
+    }
+
+    @Test
+    void shouldDoNothingWhenStatusIsSame() {
+        Order order = buildOrder(1L, "user@example.com");
+        order.setStatus(OrderStatus.PAID);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderMapper.toDTO(order)).thenReturn(new OrderResponse());
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.PAID);
+
+        orderService.updateOrderStatusAsAdmin(1L, request);
+
+        assertEquals(OrderStatus.PAID, order.getStatus());
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenOrderNotFound() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        assertThrows(NotFoundException.class,
+                () -> orderService.updateOrderStatusAsAdmin(1L, request));
+    }
+
+    @Test
+    void shouldThrowWhenTransitionIsInvalid() {
+        Order order = buildOrder(1L, "user@example.com");
+        order.setStatus(OrderStatus.PAID);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.DELIVERED);
+
+        assertThrows(InvalidOrderStatusException.class,
+                () -> orderService.updateOrderStatusAsAdmin(1L, request));
+    }
+
+    @Test
+    void shouldThrowWhenOrderAlreadyDelivered() {
+        Order order = buildOrder(1L, "user@example.com");
+        order.setStatus(OrderStatus.DELIVERED);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        assertThrows(InvalidOrderStatusException.class,
+                () -> orderService.updateOrderStatusAsAdmin(1L, request));
+    }
+
+    @Test
+    void shouldThrowWhenTryingToCancelViaUpdate() {
+        Order order = buildOrder(1L, "user@example.com");
+        order.setStatus(OrderStatus.PAID);
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.CANCELLED);
+
+        assertThrows(InvalidOrderStatusException.class,
+                () -> orderService.updateOrderStatusAsAdmin(1L, request));
     }
 
     private Order buildOrder(Long orderId, String email) {

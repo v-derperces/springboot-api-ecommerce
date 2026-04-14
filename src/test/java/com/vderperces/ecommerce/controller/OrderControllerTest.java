@@ -3,9 +3,11 @@ package com.vderperces.ecommerce.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +32,7 @@ import com.vderperces.ecommerce.dto.address.AddressResponse;
 import com.vderperces.ecommerce.dto.order.OrderPaymentRequest;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
+import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
 import com.vderperces.ecommerce.dto.orderitem.OrderItemRequest;
 import com.vderperces.ecommerce.dto.orderitem.OrderItemResponse;
 import com.vderperces.ecommerce.dto.user.UserResponse;
@@ -389,6 +392,84 @@ class OrderControllerTest {
         mockMvc.perform(post("/api/v1/admin/orders/1/cancel")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateOrderStatusShouldReturn200() throws Exception {
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        OrderResponse response = buildOrderResponse(1L, "ORD-123", "test@example.com");
+        response.setStatus(OrderStatus.SHIPPED);
+
+        when(orderService.updateOrderStatusAsAdmin(eq(1L), any())).thenReturn(response);
+
+        mockMvc.perform(patch("/api/v1/admin/orders/1").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(1))
+                .andExpect(jsonPath("$.status").value("SHIPPED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateOrderStatusNotFoundShouldReturn404() throws Exception {
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        when(orderService.updateOrderStatusAsAdmin(eq(999L), any()))
+                .thenThrow(new NotFoundException("Order not found"));
+
+        mockMvc.perform(patch("/api/v1/admin/orders/999").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateOrderStatusInvalidTransitionShouldReturn409() throws Exception {
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.DELIVERED);
+
+        when(orderService.updateOrderStatusAsAdmin(eq(1L), any()))
+                .thenThrow(new InvalidOrderStatusException("Invalid transition"));
+
+        mockMvc.perform(patch("/api/v1/admin/orders/1").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateOrderStatusWithoutStatusShouldReturn400() throws Exception {
+
+        mockMvc.perform(patch("/api/v1/admin/orders/1").contentType(MediaType.APPLICATION_JSON)
+                .content("{}")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateOrderStatusWithoutAuthShouldReturn401() throws Exception {
+
+        mockMvc.perform(patch("/api/v1/admin/orders/1/status")
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void updateOrderStatusWithUserRoleShouldReturn403() throws Exception {
+
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(OrderStatus.SHIPPED);
+
+        mockMvc.perform(
+                patch("/api/v1/admin/orders/1/status").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
 
     private OrderRequest buildOrderRequest() {
         OrderRequest request = new OrderRequest();
