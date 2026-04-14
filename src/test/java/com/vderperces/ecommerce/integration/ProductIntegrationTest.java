@@ -5,10 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.math.BigDecimal;
 import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +17,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vderperces.ecommerce.model.Category;
 import com.vderperces.ecommerce.model.Product;
@@ -54,21 +51,107 @@ class ProductIntegrationTest {
     @Test
     void getProductsShouldReturnSavedProduct() throws Exception {
         Category category = buildCategory("Gadgets");
-        categoryRepository.save(category);
 
-        Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
+        Product product = buildProduct("Active product", new BigDecimal("9.99"), 5, category);
+        product.setActive(true);
         productRepository.save(product);
 
-        mockMvc.perform(get("/api/v1/products"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Widget"));
+        Product product2 = buildProduct("Inactive product", new BigDecimal("9.99"), 5, category);
+        product2.setActive(false);
+        productRepository.save(product2);
+
+        mockMvc.perform(get("/api/v1/products")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Active product"));
+    }
+
+    @Test
+    void getProductShouldReturn404WhenInactive() throws Exception {
+        Category category = buildCategory("Gadgets");
+
+        Product product2 = buildProduct("Inactive product", new BigDecimal("9.99"), 5, category);
+        product2.setActive(false);
+        productRepository.save(product2);
+
+        mockMvc.perform(get("/api/v1/products/" + product2.getProductId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldGetAllProducts() throws Exception {
+        Category category = buildCategory("Gadgets");
+
+        Product product = buildProduct("Active product", new BigDecimal("9.99"), 5, category);
+        product.setActive(true);
+        productRepository.save(product);
+
+        Product product2 = buildProduct("Inactive product", new BigDecimal("9.99"), 5, category);
+        product2.setActive(false);
+        productRepository.save(product2);
+
+        mockMvc.perform(get("/api/v1/admin/products")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldFilterActiveProducts() throws Exception {
+        Category category = buildCategory("Gadgets");
+
+        Product product = buildProduct("Active product", new BigDecimal("9.99"), 5, category);
+        product.setActive(true);
+        productRepository.save(product);
+
+        Product product2 = buildProduct("Inactive product", new BigDecimal("9.99"), 5, category);
+        product2.setActive(false);
+        productRepository.save(product2);
+
+        mockMvc.perform(get("/api/v1/admin/products").param("visibility", "ACTIVE_ONLY"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldFilterInactiveProducts() throws Exception {
+        Category category = buildCategory("Gadgets");
+        Product product = buildProduct("Active product", new BigDecimal("9.99"), 5, category);
+        product.setActive(true);
+        productRepository.save(product);
+
+        Product product2 = buildProduct("Inactive product", new BigDecimal("9.99"), 5, category);
+        product2.setActive(false);
+        productRepository.save(product2);
+
+        mockMvc.perform(get("/api/v1/admin/products").param("visibility", "INACTIVE_ONLY"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void adminEndpointShouldReturn401WhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/products")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnPaginatedProducts() throws Exception {
+        Category category = buildCategory("Gadgets");
+
+        for (int i = 0; i < 22; i++) {
+            Product product = buildProduct("Active product", new BigDecimal("9.99"), 5, category);
+            product.setActive(true);
+            productRepository.save(product);
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products").param("page", "0").param("size", "20"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(20))
+                .andExpect(jsonPath("$.totalElements").value(22));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     void createProductAsAdminShouldReturnCreated() throws Exception {
         Category category = buildCategory("Gadgets");
-        categoryRepository.save(category);
 
         var payload = new java.util.HashMap<String, Object>();
         payload.put("name", "Widget");
@@ -76,10 +159,8 @@ class ProductIntegrationTest {
         payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
-        mockMvc.perform(post("/api/v1/admin/products")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isCreated())
+        mockMvc.perform(post("/api/v1/admin/products").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Widget"))
                 .andExpect(jsonPath("$.productId").isNumber());
     }
@@ -88,7 +169,6 @@ class ProductIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void createProductWithInvalidNameShouldReturnBadRequest() throws Exception {
         Category category = buildCategory("Gadgets");
-        categoryRepository.save(category);
 
         var payload = new java.util.HashMap<String, Object>();
         payload.put("name", "");
@@ -96,8 +176,7 @@ class ProductIntegrationTest {
         payload.put("stock", 5);
         payload.put("categoryIds", List.of(category.getCategoryId()));
 
-        mockMvc.perform(post("/api/v1/admin/products")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/admin/products").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest());
     }
@@ -106,7 +185,6 @@ class ProductIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void deleteProductAsAdminShouldRemoveProduct() throws Exception {
         Category category = buildCategory("Gadgets");
-        categoryRepository.save(category);
 
         Product product = buildProduct("Widget", new BigDecimal("9.99"), 5, category);
         Product saved = productRepository.save(product);
@@ -120,7 +198,7 @@ class ProductIntegrationTest {
     private Category buildCategory(String name) {
         Category category = new Category();
         category.setName(name);
-        return category;
+        return categoryRepository.save(category);
     }
 
     private Product buildProduct(String name, BigDecimal price, int stock, Category category) {

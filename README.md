@@ -34,12 +34,6 @@ It allows managing users, their roles, products, categories, and orders.
 # Running the Project
 mvn spring-boot:run
 
-# Possible Future Improvements
-
-* Complete role and permission management
-* Add full audit/logging of user actions
-* Implement pagination and sorting for endpoints
-
 # Contact
 
 For any questions or suggestions, feel free to contact me.
