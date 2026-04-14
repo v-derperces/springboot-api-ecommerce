@@ -9,10 +9,10 @@
         <version>3.4.4</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
-    <groupId>fr.afpa.pompey</groupId>
-    <artifactId>APIEcommerce</artifactId>
+    <groupId>com.vderperces</groupId>
+    <artifactId>ecommerce</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>APIEcommerce</name>
+    <name>ecommerce</name>
     <description>API SpringBoot</description>
     <url />
     <licenses>
