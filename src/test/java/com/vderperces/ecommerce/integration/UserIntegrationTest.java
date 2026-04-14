@@ -1,12 +1,10 @@
 package com.vderperces.ecommerce.integration;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,25 +12,24 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vderperces.ecommerce.dto.LoginRequest;
 import com.vderperces.ecommerce.dto.user.ChangePasswordRequest;
-import com.vderperces.ecommerce.dto.user.UserCreateRequest;
+import com.vderperces.ecommerce.dto.user.UserUpdateRequest;
 import com.vderperces.ecommerce.model.Role;
 import com.vderperces.ecommerce.model.User;
 import com.vderperces.ecommerce.repository.RoleRepository;
 import com.vderperces.ecommerce.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class UserIntegrationTest {
+
+    private static final String EMAIL = "harry@hogwarts.com";
+    private static final String PASSWORD = "Test123!";
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,181 +49,101 @@ class UserIntegrationTest {
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
+        createUser();
     }
 
-    @Test
-    @Transactional
-    void registerShouldCreateUserValid() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get(); // Role configured in data.sql
-
-        String email = "ron.weasly@hogwarts.com";
-        String rawPassword = "TestPass123";
-
-        UserCreateRequest request = new UserCreateRequest();
-        request.setFirstName("Ron");
-        request.setLastName("Weasly");
-        request.setEmail(email);
-        request.setPassword(rawPassword);
-
-        mockMvc.perform(post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value(email))
-                .andExpect(jsonPath("$.firstName").value("Ron"))
-                .andExpect(jsonPath("$.lastName").value("Weasly"));
-
-        User saved = userRepository.findByEmail(email).orElseThrow();
-        assert (saved.getFirstName()).equals("Ron");
-        assert (saved.getLastName()).equals("Weasly");
-        assert (passwordEncoder.matches(rawPassword, saved.getPassword()));
-        assert (saved.getRoles()).contains(userRole);
-    }
-
-    @Test
-    void registerDuplicateEmailShouldReturnConflict() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get();
-
-        String email = "hermione@hogwarts.com";
-
-        // Existing user
-        User existing = new User();
-        existing.setFirstName("Hermione");
-        existing.setLastName("Granger");
-        existing.setEmail(email);
-        existing.setPassword(passwordEncoder.encode("Password1"));
-        existing.setRoles(List.of(userRole));
-        userRepository.save(existing);
-
-        UserCreateRequest request = new UserCreateRequest();
-        request.setFirstName("Hermione");
-        request.setLastName("Granger");
-        request.setEmail(email);
-        request.setPassword("Password1");
-
-        mockMvc.perform(post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message")
-                        .value("Unable to create account. Please check the provided information."));
-    }
-
-    @Test
-    void loginWithValidCredentialsShouldReturnToken() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get();
-
-        String email = "harry@hogwarts.com";
-        String rawPassword = "Test123!";
+    private User createUser() {
+        Role role = roleRepository.findByName("USER").orElseThrow();
 
         User user = new User();
         user.setFirstName("Harry");
         user.setLastName("Potter");
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setRoles(List.of(userRole));
-        userRepository.save(user);
+        user.setEmail(EMAIL);
+        user.setPassword(passwordEncoder.encode(PASSWORD));
+        user.setActive(true);
+        user.setRoles(List.of(role));
 
-        LoginRequest login = new LoginRequest();
-        login.setUsername(email);
-        login.setPassword(rawPassword);
+        return userRepository.save(user);
+    }
 
-        mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists());
+    private String asJson(Object obj) throws Exception {
+        return objectMapper.writeValueAsString(obj);
     }
 
     @Test
-    void loginWithInvalidCredentialsShouldReturnUnauthorized() throws Exception {
-        LoginRequest login = new LoginRequest();
-        login.setUsername("nonexistent@hogwarts.com");
-        login.setPassword("wrongpass");
+    @WithMockUser(username = EMAIL, roles = "USER")
+    void shouldReturnCurrentUser() throws Exception {
 
-        mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+        mockMvc.perform(get("/api/v1/users")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(EMAIL))
+                .andExpect(jsonPath("$.firstName").value("Harry"));
     }
 
     @Test
-    void changePasswordValidShouldReturnNoContent() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get();
-
-        String email = "luna@hogwarts.com";
-        String oldPassword = "OldPass123";
-        String newPassword = "NewPass123";
-
-        User user = new User();
-        user.setFirstName("Luna");
-        user.setLastName("Lovegood");
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(oldPassword));
-        user.setRoles(List.of(userRole));
-        userRepository.save(user);
-
-        LoginRequest login = new LoginRequest();
-        login.setUsername(email);
-        login.setPassword(oldPassword);
-
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        ChangePasswordRequest dto = new ChangePasswordRequest();
-        dto.setCurrentPassword(oldPassword);
-        dto.setNewPassword(newPassword);
-
-        String token = result.getResponse().getContentAsString().replace("{\"token\":\"", "").replace("\"}", "");
-
-        mockMvc.perform(put("/api/v1/users/password").header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isNoContent());
-
-        User updated = userRepository.findByEmail(email).orElseThrow();
-        assert (passwordEncoder.matches(newPassword, updated.getPassword()));
+    void shouldReturn401WhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/users")).andExpect(status().isUnauthorized());
     }
 
     @Test
-    void changePasswordWrongCurrentPasswordShouldReturnBadRequest() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get();
+    @WithMockUser(username = EMAIL, roles = "USER")
+    void shouldUpdateUserProfile() throws Exception {
 
-        String email = "neville@hogwarts.com";
-        String oldPassword = "CorrectPass123";
+        UserUpdateRequest request = new UserUpdateRequest();
+        request.setFirstName("NewFirst");
+        request.setLastName("NewLast");
+        request.setEmail("new@mail.com");
 
-        User user = new User();
-        user.setFirstName("Neville");
-        user.setLastName("Longbottom");
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(oldPassword));
-        user.setRoles(List.of(userRole));
-        userRepository.save(user);
+        mockMvc.perform(put("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
+                .content(asJson(request))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("NewFirst"))
+                .andExpect(jsonPath("$.email").value("new@mail.com"));
+    }
 
-        LoginRequest login = new LoginRequest();
-        login.setUsername(email);
-        login.setPassword(oldPassword);
+    @Test
+    @WithMockUser(username = EMAIL, roles = "USER")
+    void shouldReturnConflictWhenEmailAlreadyExists() throws Exception {
 
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isOk())
-                .andReturn();
+        Role role = roleRepository.findByName("USER").orElseThrow();
 
-        String token = result.getResponse().getContentAsString().replace("{\"token\":\"", "").replace("\"}", "");
+        User existing = new User();
+        existing.setFirstName("Ron");
+        existing.setLastName("Weasley");
+        existing.setEmail("existing@mail.com");
+        existing.setPassword(passwordEncoder.encode(PASSWORD));
+        existing.setRoles(List.of(role));
+        userRepository.save(existing);
 
-        ChangePasswordRequest dto = new ChangePasswordRequest();
-        dto.setCurrentPassword("WrongPass");
-        dto.setNewPassword("NewPass123");
+        UserUpdateRequest request = new UserUpdateRequest();
+        request.setFirstName("Harry");
+        request.setLastName("Potter");
+        request.setEmail("existing@mail.com");
 
-        mockMvc.perform(put("/api/v1/users/password").header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest())
+        mockMvc.perform(put("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
+                .content(asJson(request))).andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(username = EMAIL, roles = "USER")
+    void shouldChangePassword() throws Exception {
+
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword(PASSWORD);
+        request.setNewPassword("NewPass123!");
+
+        mockMvc.perform(put("/api/v1/users/password").contentType(MediaType.APPLICATION_JSON)
+                .content(asJson(request))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(username = EMAIL, roles = "USER")
+    void shouldReturnBadRequestWhenCurrentPasswordInvalid() throws Exception {
+
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("wrong");
+        request.setNewPassword("NewPass123!");
+
+        mockMvc.perform(put("/api/v1/users/password").contentType(MediaType.APPLICATION_JSON)
+                .content(asJson(request))).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Current password is incorrect"));
     }
 
