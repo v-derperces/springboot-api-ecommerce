@@ -27,7 +27,7 @@ public class JWTService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.DAYS))
+                .expiresAt(now.plus(30, ChronoUnit.MINUTES))
                 .subject(authentication.getName())
                 .claim("roles", authentication.getAuthorities()
                         .stream()

@@ -14,43 +14,39 @@ import com.vderperces.ecommerce.dto.user.UserCreateRequest;
 import com.vderperces.ecommerce.dto.user.UserResponse;
 import com.vderperces.ecommerce.service.AuthService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
  * REST controller for authentication operations (login and registration).
  */
+@Tag(name = "Authentication")
 @RequestMapping("/api/v1/auth")
 @RestController
 public class AuthController {
 
-    /**
-     * Service used for authentication operations.
-     */
     private final AuthService authService;
 
     public AuthController(final AuthService authService) {
         this.authService = authService;
     }
 
-    /**
-     * Register a new user.
-     *
-     * @param request user create request
-     * @return created user response with HTTP 201
-     */
+    @Operation(summary = "Register a new user")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "User created")})
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody final UserCreateRequest request) {
+    public ResponseEntity<UserResponse> register(
+            @Valid @RequestBody final UserCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(this.authService.register(request));
     }
 
-    /**
-     * Authenticate a user and return a JWT token.
-     *
-     * @param request login request containing username/password
-     * @return map with token string and HTTP 200
-     */
+    @Operation(summary = "Login user and return JWT token")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "JWT token generated")})
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody final LoginRequest request) {
+    public ResponseEntity<Map<String, String>> login(
+            @Valid @RequestBody final LoginRequest request) {
         final String token = this.authService.login(request.getUsername(), request.getPassword());
         return ResponseEntity.ok(Map.of("token", token));
     }
