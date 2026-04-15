@@ -14,11 +14,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
+
 import com.vderperces.ecommerce.dto.order.OrderPaymentRequest;
 import com.vderperces.ecommerce.dto.order.OrderRequest;
 import com.vderperces.ecommerce.dto.order.OrderResponse;
+import com.vderperces.ecommerce.dto.order.UpdateOrderStatusRequest;
 import com.vderperces.ecommerce.service.OrderService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
@@ -29,6 +35,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Orders", description = "Order management operations")
 public class OrderController {
 
     private final OrderService orderService;
@@ -44,6 +51,12 @@ public class OrderController {
      * @param principal the authenticated user
      * @return the created order details
      */
+    @Operation(summary = "Create order")
+    @ApiResponses({@ApiResponse(responseCode = "201", description = "Order created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "User or product not found"),
+            @ApiResponse(responseCode = "409",
+                    description = "Insufficient stock or product unavailable")})
     @PostMapping("/orders")
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request,
             final Authentication authentication) {
@@ -59,6 +72,11 @@ public class OrderController {
      * @param principal the authenticated user
      * @return the updated order details with paid status
      */
+    @Operation(summary = "Pay order")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Payment successful"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "409",
+                    description = "Invalid order status or payment method")})
     @PostMapping("/orders/{orderId}/pay")
     public ResponseEntity<OrderResponse> payOrder(@PathVariable Long orderId,
             @Valid @RequestBody OrderPaymentRequest request, final Authentication authentication) {
@@ -76,6 +94,10 @@ public class OrderController {
      * @param authentication the authenticated user
      * @return the cancelled order details with HTTP 200
      */
+    @Operation(summary = "Cancel order (user)")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Order cancelled"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "409", description = "Order cannot be cancelled")})
     @PostMapping("/orders/{orderId}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId,
             final Authentication authentication) {
@@ -89,6 +111,8 @@ public class OrderController {
      * @param pageable pagination and sorting parameters (default: page 0, size 20, sorted by createdAt DESC)
      * @return a page of the user's orders with HTTP 200
      */
+    @Operation(summary = "Get user orders")
+    @ApiResponse(responseCode = "200", description = "Orders retrieved")
     @GetMapping("/orders")
     public ResponseEntity<Page<OrderResponse>> getUserOrders(final Authentication authentication,
             @PageableDefault(size = 20, page = 0, sort = "createdAt",
@@ -103,6 +127,9 @@ public class OrderController {
      * @param authentication the authenticated user
      * @return the order detail
      */
+    @Operation(summary = "Get user order by id")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Order found"),
+            @ApiResponse(responseCode = "404", description = "Order not found")})
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<OrderResponse> getUserOrder(@PathVariable Long orderId,
             final Authentication authentication) {
@@ -115,10 +142,11 @@ public class OrderController {
      * @param pageable pagination and sorting parameters
      * @return paginated list of all orders
      */
+    @Operation(summary = "Get all orders (admin)")
+    @ApiResponse(responseCode = "200", description = "Orders retrieved")
     @GetMapping("/admin/orders")
     public ResponseEntity<Page<OrderResponse>> getAllOrders(@PageableDefault(size = 20, page = 0,
             sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
 
@@ -128,9 +156,11 @@ public class OrderController {
      * @param orderId the ID of the order
      * @return the order details
      */
+    @Operation(summary = "Get order by id (admin)")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Order found"),
+            @ApiResponse(responseCode = "404", description = "Order not found")})
     @GetMapping("/admin/orders/{orderId}")
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
-
         return ResponseEntity.ok(orderService.getOrderByIdForAdmin(orderId));
     }
 
@@ -145,12 +175,13 @@ public class OrderController {
      * @param orderId the id of the order to cancel
      * @return the cancelled order
      */
+    @Operation(summary = "Cancel order (admin)")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Order cancelled"),
+            @ApiResponse(responseCode = "409", description = "Order cannot be cancelled"),
+            @ApiResponse(responseCode = "404", description = "Order not found")})
     @PostMapping("/admin/orders/{orderId}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long orderId) {
-
-        OrderResponse response = orderService.cancelOrderAsAdmin(orderId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(orderService.cancelOrderAsAdmin(orderId));
     }
 
     /**
@@ -167,11 +198,13 @@ public class OrderController {
      * @param request the requested status update
      * @return the updated order
      */
+    @Operation(summary = "Update order status (admin)")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Order updated"),
+            @ApiResponse(responseCode = "409", description = "Invalid status transition"),
+            @ApiResponse(responseCode = "404", description = "Order not found")})
     @PatchMapping("/admin/orders/{orderId}")
     public ResponseEntity<OrderResponse> updateOrder(@PathVariable Long orderId,
             @Valid @RequestBody UpdateOrderStatusRequest request) {
-
         return ResponseEntity.ok(orderService.updateOrderStatusAsAdmin(orderId, request));
     }
-
 }

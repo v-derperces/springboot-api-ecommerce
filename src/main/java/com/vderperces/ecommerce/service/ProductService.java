@@ -1,11 +1,11 @@
 package com.vderperces.ecommerce.service;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import com.vderperces.ecommerce.dto.product.ProductRequest;
 import com.vderperces.ecommerce.dto.product.ProductResponse;
+import com.vderperces.ecommerce.enums.ProductVisibility;
 import com.vderperces.ecommerce.exceptions.ConflictException;
 import com.vderperces.ecommerce.exceptions.NotFoundException;
 import com.vderperces.ecommerce.mapper.ProductMapper;
@@ -33,8 +33,7 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     public ProductService(final ProductRepository productRepository,
-            final OrderItemRepository orderItemRepository,
-            final CategoryService categoryService,
+            final OrderItemRepository orderItemRepository, final CategoryService categoryService,
             final ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
@@ -43,12 +42,59 @@ public class ProductService {
     }
 
     /**
-     * Get all products.
+     * Get only active products for public catalog.
      *
-     * @return list of product responses
+     * @param pageable pagination
+     * @return paginated active products
      */
-    public List<ProductResponse> getProducts() {
-        return this.productRepository.findAll().stream().map(this.productMapper::toDTO).toList();
+    public Page<ProductResponse> getActiveProducts(Pageable pageable) {
+        return productRepository.findByActiveTrue(pageable).map(productMapper::toDTO);
+    }
+
+    /**
+     * Get a single active product (public access).
+     *
+     * @param id product id
+     * @return product response
+     */
+    public ProductResponse getActiveProductById(Long id) {
+        Product product = productRepository.findByProductIdAndActiveTrue(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        return productMapper.toDTO(product);
+    }
+
+    /**
+     * Admin: get products with visibility filter.
+     *
+     * @param visibility ACTIVE, INACTIVE, ALL
+     * @param pageable pagination
+     * @return paginated products
+     */
+    public Page<ProductResponse> getProducts(ProductVisibility visibility, Pageable pageable) {
+
+        Page<Product> products;
+
+        switch (visibility) {
+            case ACTIVE_ONLY -> products = productRepository.findByActiveTrue(pageable);
+            case INACTIVE_ONLY -> products = productRepository.findByActiveFalse(pageable);
+            default -> products = productRepository.findAll(pageable);
+        }
+
+        return products.map(productMapper::toDTO);
+    }
+
+    /**
+     * Admin: get product by id (any state).
+     *
+     * @param id product id
+     * @return product response
+     */
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        return productMapper.toDTO(product);
     }
 
     /**
@@ -80,20 +126,22 @@ public class ProductService {
     /**
      * Update a product.
      *
-     * @param id      product id
+     * @param id product id
      * @param request product request payload
      * @return updated product response
      */
     public ProductResponse updateProduct(final Long id, final ProductRequest request) {
-        final Product existingProduct = this.productRepository.findById(id).orElseThrow(
-                () -> new NotFoundException("Cannot update product: No product found with id: " + id));
+        final Product existingProduct =
+                this.productRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                        "Cannot update product: No product found with id: " + id));
         existingProduct.setName(request.getName());
         existingProduct.setPrice(request.getPrice());
         existingProduct.setStock(request.getStock());
         existingProduct.setActive(request.isActive());
         existingProduct.setDescription(request.getDescription());
         existingProduct.setImageUrls(request.getImageUrls());
-        existingProduct.setCategories(this.categoryService.getCategoriesByIds(request.getCategoryIds()));
+        existingProduct
+                .setCategories(this.categoryService.getCategoriesByIds(request.getCategoryIds()));
         return this.productMapper.toDTO(this.productRepository.save(existingProduct));
     }
 
@@ -103,12 +151,13 @@ public class ProductService {
      * @param id product id
      */
     public void deleteProduct(final Long id) {
-        final Product product = this.productRepository.findById(id).orElseThrow(
-                () -> new NotFoundException("Cannot delete product: No product found with id: " + id));
+        final Product product =
+                this.productRepository.findById(id).orElseThrow(() -> new NotFoundException(
+                        "Cannot delete product: No product found with id: " + id));
 
         if (this.orderItemRepository.existsByProduct(product)) {
-            throw new ConflictException(
-                    "Product with id " + id + " cannot be deleted because it is associated with an order");
+            throw new ConflictException("Product with id " + id
+                    + " cannot be deleted because it is associated with an order");
         }
 
         this.productRepository.deleteById(id);

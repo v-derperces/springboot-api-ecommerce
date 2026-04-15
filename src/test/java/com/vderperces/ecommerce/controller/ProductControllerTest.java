@@ -8,19 +8,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.math.BigDecimal;
-
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vderperces.ecommerce.dto.product.ProductRequest;
 import com.vderperces.ecommerce.dto.product.ProductResponse;
@@ -41,12 +42,6 @@ class ProductControllerTest {
     private ProductService productService;
 
     @Test
-    void getProductsShouldReturn200() throws Exception {
-        mockMvc.perform(get("/api/v1/products"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
     @WithMockUser(roles = "ADMIN")
     void createProductAsAdminShouldReturn201() throws Exception {
         ProductRequest request = new ProductRequest();
@@ -61,10 +56,8 @@ class ProductControllerTest {
 
         when(productService.createProduct(any(ProductRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/admin/products")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+        mockMvc.perform(post("/api/v1/admin/products").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.productId").value(1))
                 .andExpect(jsonPath("$.name").value("Widget"));
     }
@@ -78,8 +71,7 @@ class ProductControllerTest {
         request.setStock(5);
         request.setCategoryIds(java.util.List.of(1L));
 
-        mockMvc.perform(post("/api/v1/admin/products")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/admin/products").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
@@ -97,12 +89,11 @@ class ProductControllerTest {
         response.setProductId(1L);
         response.setName("Updated Widget");
 
-        when(productService.updateProduct(any(Long.class), any(ProductRequest.class))).thenReturn(response);
+        when(productService.updateProduct(any(Long.class), any(ProductRequest.class)))
+                .thenReturn(response);
 
-        mockMvc.perform(put("/api/v1/admin/products/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+        mockMvc.perform(put("/api/v1/admin/products/1").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(1))
                 .andExpect(jsonPath("$.name").value("Updated Widget"));
     }
@@ -110,7 +101,64 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteProductAsAdminShouldReturn204() throws Exception {
-        mockMvc.perform(delete("/api/v1/admin/products/1"))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v1/admin/products/1")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getActiveProductsShouldReturn200() throws Exception {
+        ProductResponse product = buildProduct();
+
+        Page<ProductResponse> page = new PageImpl<>(List.of(product));
+
+        when(productService.getActiveProducts(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/products")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].productId").value(1));
+    }
+
+    @Test
+    void getProductShouldReturn200() throws Exception {
+        ProductResponse product = buildProduct();
+
+        when(productService.getActiveProductById(1L)).thenReturn(product);
+
+        mockMvc.perform(get("/api/v1/products/1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getProductsShouldReturn200() throws Exception {
+        ProductResponse product = buildProduct();
+
+        Page<ProductResponse> page = new PageImpl<>(List.of(product));
+
+        when(productService.getProducts(any(), any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/admin/products")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].productId").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getProductAsAdminShouldReturn200() throws Exception {
+        ProductResponse product = buildProduct();
+
+        when(productService.getProductById(1L)).thenReturn(product);
+
+        mockMvc.perform(get("/api/v1/admin/products/1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1));
+    }
+
+    @Test
+    void adminEndpointShouldReturn401WhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/products")).andExpect(status().isUnauthorized());
+    }
+
+    private ProductResponse buildProduct() {
+        ProductResponse product = new ProductResponse();
+        product.setProductId(1L);
+        product.setName("Laptop");
+        return product;
     }
 }
